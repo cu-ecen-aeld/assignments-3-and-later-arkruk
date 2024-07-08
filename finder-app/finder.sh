@@ -8,8 +8,8 @@ elif  [ $# -eq 1 ]; then
     exit 1
 elif [ -d $1 ]; then
     files_number="$(ls $1 | wc -l)"
-    files_number="$(grep -r $2 | wc -l)"
-    echo "The number of files are $files_number and the number of matching lines are "
+    line_number="$(grep -r $2 $1 | wc -l)"
+    echo "The number of files are $files_number and the number of matching lines are $line_number"
     exit 0
 else
     echo "$1 is not directory"
