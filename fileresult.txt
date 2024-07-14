@@ -1,0 +1,5 @@
+kruq@ubuntu:~/git/assignment-2-arkruk/finder-app$ make CROSS_COMPILE=aarch64-none-linux-gnu-gcc
+aarch64-none-linux-gnu-gcc -g -Wall -c -o writer.o writer.c
+aarch64-none-linux-gnu-gcc -g -Wall -I/ writer.o -o writer
+kruq@ubuntu:~/git/assignment-2-arkruk/finder-app$ ls
+conf  finder.sh  finder-test.sh  Makefile  writer  writer.c  writer.o  writer.sh
