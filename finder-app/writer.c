@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        fd = open(argv[1], O_CREAT|O_RDWR, S_IROTH | S_IWOTH | S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP);
+        fd = open(argv[1], O_CREAT|O_WRONLY|O_TRUNC, S_IROTH | S_IWOTH | S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP);
         if(fd < 0)
         {
             syslog(LOG_ERR, "Cannot open or create file %s", argv[1]);
