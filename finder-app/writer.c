@@ -12,10 +12,12 @@ int main(int argc, char *argv[])
     if (argc == 1)
     {
         syslog(LOG_ERR, "path and text string not defined");
+        return 1;
     }
     else if (argc == 2)
     {
         syslog(LOG_ERR, "text string not defined");
+        return 1;
     }
     else
     {

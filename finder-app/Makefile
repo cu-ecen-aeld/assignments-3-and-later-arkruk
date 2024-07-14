@@ -3,7 +3,8 @@ CC=gcc
 default: writer
 
 writer: writer.c
-	$(CC) -o writer writer.c -I.
+	$(CC) -g -Wall -c -o writer.o writer.c
+	$(CC) -g -Wall -I/ writer.o -o writer
 
 clean:
-	rm writer
+	rm -f *.o writer *.elf *.map
