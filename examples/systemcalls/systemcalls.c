@@ -44,28 +44,38 @@ bool do_exec(int count, ...)
         command[i] = va_arg(args, char *);
     }
     command[count] = NULL;
-    
-    int wstatus;
 
-    int pid = fork();
+    int status;
+
+    fflush(stdout);
+    pid_t  pid = fork();
     if (pid == -1)
     {
+        printf("fork failed");
         return false;
     }
-
-    if(execv(command[0], &command[1]) == -1)
+    else if(pid == 0)
     {
-        return false;
+        printf("child execution");
+        if(execv(command[0], command) == -1)
+        {
+            exit(1);
+        }
+        exit(0);
     }
-
-    if (waitpid(pid, &wstatus, WUNTRACED | WCONTINUED) == -1)
+    else
     {
-        return false;
+        printf("parent execution");
+        if (wait(&status) == -1)
+        {
+            return false;
+        }
+        printf("child exit status %d %d\n\n", WIFEXITED(status), WEXITSTATUS(status));
     }
 
     va_end(args);
 
-    return true;
+    return (WEXITSTATUS(status) == 0);
 }
 
 /**
@@ -87,7 +97,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 
     va_end(args);
     command[count] = command[count];
-    /*int kidpid;
+    int kidpid;
     int fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
     if (fd < 0)
     {
@@ -110,7 +120,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
             abort();
         default:
             close(fd);
-    }*/
+    }
 
     return true;
 }
