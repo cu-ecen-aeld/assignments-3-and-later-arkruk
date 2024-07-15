@@ -102,16 +102,21 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     int fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
     if (fd < 0)
     {
-        perror("open"); abort();
+        perror("open");
+        return false;
     }
 
     switch (pid = fork())
     {
         case -1:
-            perror("fork");
-            abort();
+            close(fd);
+            return false;
         case 0:
-            if (dup2(fd, 1) < 0) { perror("dup2"); abort(); }
+            if (dup2(fd, 1) < 0)
+            {
+                perror("dup2");
+                abort();
+            }
             close(fd);
 
             printf("child execution");
@@ -130,5 +135,5 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
             printf("child exit status %d %d\n\n", WIFEXITED(status), WEXITSTATUS(status));
     }
 
-    return true;
+    return (WEXITSTATUS(status) == 0);
 }
