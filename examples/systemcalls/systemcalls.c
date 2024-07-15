@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdio.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -57,7 +58,7 @@ bool do_exec(int count, ...)
         return false;
     }
 
-    if (wait(&wstatus) == -1)
+    if (waitpid(pid, &wstatus, WUNTRACED | WCONTINUED) == -1)
     {
         return false;
     }
@@ -85,37 +86,31 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     command[count] = NULL;
 
     va_end(args);
-
-    int kidpid;
+    command[count] = command[count];
+    /*int kidpid;
     int fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
     if (fd < 0)
     {
         perror("open"); abort();
     }
-    
+
+    printf("AAAAAAAAAAAAAAAAAAAAAAAAA");
+                printf("\n\n%s %s\n\n", command[0], command[1]);
+
     switch (kidpid = fork())
     {
         case -1: perror("fork"); abort();
         case 0:
+
             if (dup2(fd, 1) < 0) { perror("dup2"); abort(); }
             close(fd);
+
             execv(command[0], &command[1]);
             perror("execvp");
             abort();
         default:
             close(fd);
-    }
-    /* do whatever the parent wants to do. */
-
-/*
- * TODO
- *   Call execv, but first using https://stackoverflow.com/a/13784315/1446624 as a refernce,
- *   redirect standard out to a file specified by outputfile.
- *   The rest of the behaviour is same as do_exec()
- *
-*/
-
-
+    }*/
 
     return true;
 }
