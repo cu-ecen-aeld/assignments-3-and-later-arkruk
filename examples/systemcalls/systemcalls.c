@@ -96,30 +96,38 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     command[count] = NULL;
 
     va_end(args);
-    command[count] = command[count];
-    int kidpid;
+
+    pid_t pid;
+    int status;
     int fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
     if (fd < 0)
     {
         perror("open"); abort();
     }
 
-    printf("AAAAAAAAAAAAAAAAAAAAAAAAA");
-                printf("\n\n%s %s\n\n", command[0], command[1]);
-
-    switch (kidpid = fork())
+    switch (pid = fork())
     {
-        case -1: perror("fork"); abort();
+        case -1:
+            perror("fork");
+            abort();
         case 0:
-
             if (dup2(fd, 1) < 0) { perror("dup2"); abort(); }
             close(fd);
 
-            execv(command[0], &command[1]);
-            perror("execvp");
-            abort();
+            printf("child execution");
+            if(execv(command[0], command) == -1)
+            {
+                exit(1);
+            }
+            exit(0);
         default:
             close(fd);
+            printf("parent execution");
+            if (wait(&status) == -1)
+            {
+                return false;
+            }
+            printf("child exit status %d %d\n\n", WIFEXITED(status), WEXITSTATUS(status));
     }
 
     return true;
