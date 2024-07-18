@@ -13,6 +13,7 @@ FINDER_APP_DIR=$(realpath $(dirname $0))
 ARCH=arm64
 CROSS_COMPILE=aarch64-none-linux-gnu-
 HOME_SCRIPT_LOCATION=`pwd`
+LIBC_LOCATION="$(dirname `which ${CROSS_COMPILE}gcc`)/../aarch64-none-linux-gnu/libc/"
 
 if [ $# -lt 1 ]
 then
@@ -88,7 +89,7 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 
 # TODO: Add library dependencies to rootfs
-cp -r /home/kruq/gcc-arm-10.3-2021.07-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc/ ${OUTDIR}/rootfs
+cp -r ${LIBC_LOCATION} ${OUTDIR}/rootfs
 
 # TODO: Make device nodes
 sudo mknod -m 666 dev/null c 1 3
