@@ -12,6 +12,7 @@ BUSYBOX_VERSION=1_33_1
 FINDER_APP_DIR=$(realpath $(dirname $0))
 ARCH=arm64
 CROSS_COMPILE=aarch64-none-linux-gnu-
+HOME_SCRIPT_LOCATION=`pwd`
 
 if [ $# -lt 1 ]
 then
@@ -39,10 +40,12 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
 
     make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} modules
     make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} dtbs
-
+    cp ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image $OUTDIR
 
     # TODO: Add your kernel build steps here
 fi
+
+
 
 echo "Adding the Image in outdir"
 
@@ -85,18 +88,30 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 
 # TODO: Add library dependencies to rootfs
-
+cp -r /home/kruq/gcc-arm-10.3-2021.07-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc/ ${OUTDIR}/rootfs
 
 # TODO: Make device nodes
 sudo mknod -m 666 dev/null c 1 3
 sudo mknod -m 600 dev/console c 5 1
-sudo chown -R root:root *
 
 # TODO: Clean and build the writer utility
+cd ${HOME_SCRIPT_LOCATION}
+make clean
+make CROSS_COMPILE=${CROSS_COMPILE}gcc
 
 # TODO: Copy the finder related scripts and executables to the /home directory
 # on the target rootfs
+sudo cp finder.sh ${OUTDIR}/rootfs/home
+sudo cp writer ${OUTDIR}/rootfs/home
+sudo cp finder-test.sh ${OUTDIR}/rootfs/home
+sudo cp autorun-qemu.sh ${OUTDIR}/rootfs/home
+sudo cp -r conf ${OUTDIR}/rootfs/home/conf
 
+cd ${OUTDIR}/rootfs
+sudo chown -R root:root *
 # TODO: Chown the root directory
 
 # TODO: Create initramfs.cpio.gz
+find . | cpio -H newc -ov --owner root:root > ${OUTDIR}/initramfs.cpio
+cd ${OUTDIR}
+gzip -f initramfs.cpio
