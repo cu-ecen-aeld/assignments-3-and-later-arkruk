@@ -77,7 +77,7 @@ fi
 make distclean
 make defconfig
 make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE}
-make CONFIG_PREFIX=${OUTDIR} ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE}/rootfs install
+make CONFIG_PREFIX=${OUTDIR}/rootfs ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} install
 # TODO: Make and install busybox
 cd ${OUTDIR}/rootfs
 echo "Library dependencies"
@@ -85,6 +85,7 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 
 # TODO: Add library dependencies to rootfs
+
 
 # TODO: Make device nodes
 sudo mknod -m 666 dev/null c 1 3
