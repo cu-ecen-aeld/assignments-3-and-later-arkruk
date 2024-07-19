@@ -71,7 +71,6 @@ then
     git clone git://busybox.net/busybox.git
     cd busybox
     git checkout ${BUSYBOX_VERSION}
-    
 
     # TODO:  Configure busybox
 else
@@ -89,7 +88,8 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 
 # TODO: Add library dependencies to rootfs
-cp -r ${LIBC_LOCATION} ${OUTDIR}/rootfs
+cp -r ${LIBC_LOCATION}/lib ${OUTDIR}/rootfs
+cp -r ${LIBC_LOCATION}/lib64 ${OUTDIR}/rootfs
 
 # TODO: Make device nodes
 sudo mknod -m 666 dev/null c 1 3
