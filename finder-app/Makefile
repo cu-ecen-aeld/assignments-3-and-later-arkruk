@@ -1,10 +1,10 @@
-CROSS_COMPILE=gcc
+all: writer
 
-default: writer
+writer.o: writer.c
+	$(CC) $(CCFLAGS) -c writer.c
 
-writer: writer.c
-	$(CROSS_COMPILE) -c -o writer.o writer.c
-	$(CROSS_COMPILE) -I/ writer.o -o writer
+writer: writer.o
+	$(CC) $(LDFLAGS) writer.o -o writer
 
-clean:
-	rm -f *.o writer *.elf *.map
+clean :
+	rm -f writer.o writer
