@@ -1,20 +1,29 @@
 #include<sys/socket.h>
 #include<sys/types.h>
 #include<netinet/in.h>
+#include<arpa/inet.h>
 #include<stdio.h>
 #include<string.h>
 #include<netdb.h>
+#include<syslog.h>
+#include<fcntl.h>
 
-#define SERVER_PORT     9000
+#define SERVER_PORT 9000
+#define BUFSIZE 100
 
 int main(int argc, char *argv[])
 {
+    printf("Server started\n");
     const char localhost[] = "localhost";
-    int server_socket, result, client_address_len;
+    int server_socket, result, client_address_len, result_size, accept_socket;
     struct sockaddr_in address, client_address;
     struct hostent *host;
+    bzero((char *) &address, sizeof(address));
     address.sin_family = AF_INET;
     address.sin_port = htons (SERVER_PORT);
+    char* file_name = "/var/tmp/aesdsocketdata";
+
+    char received_message[BUFSIZE];
 
     if((host = gethostbyname(localhost)) == NULL)
     {
@@ -49,17 +58,119 @@ int main(int argc, char *argv[])
 	}
 
     client_address_len = sizeof(client_address);
-    result = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
+    accept_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
     if (result < 0)
     {
-		printf("Listen failed\n");
+		printf("Accept failed\n");
+        close(accept_socket);
         return -1;
     }
 
-    printf("XXXXXXXXX\n");
-    
+    openlog(NULL, 0, LOG_USER);
+
+    char *client_add = inet_ntoa(client_address.sin_addr);
+    syslog(LOG_DEBUG, "Accepted connection from %s", client_add);
+    closelog();
+    printf("Accepted connection from %s\n", client_add);
+
+
+    // read
+    int fd;
+    fd = open(file_name, O_CREAT|O_WRONLY|O_TRUNC, S_IROTH | S_IWOTH | S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP);
+    if(fd < 0)
+    {
+        printf("cannot create file %s\n", file_name);
+        closelog();
+        close(accept_socket);
+        return -1;
+    }
+    else
+    {
+        for (;;)
+        {
+            printf("123\n");
+            bzero(received_message, BUFSIZE);
+
+            result_size = read(accept_socket, received_message, BUFSIZE);
+            printf ("DATA size: %d\n", result_size);
+            result = write(fd, received_message, result_size);
+
+            if(result < 0)
+            {
+                printf("write failed\n");
+                close(fd);
+                closelog();
+                close(accept_socket);
+                return -1;
+            }
+
+            if (received_message[result_size - 1] == '\n')
+            {
+                printf("data finished\n");
+                break;
+            }
+        }
+
+        close(fd);
+        closelog();
+    }
+
+    // send
+    fd = open(file_name, O_RDONLY | O_TRUNC, S_IROTH | S_IWOTH | S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP);
+    if(fd < 0)
+    {
+        printf("111\n");
+        printf("cannot open file %s\n", file_name);
+        closelog();
+        close(accept_socket);
+        return -1;
+    }
+    else
+    {
+        printf("2222\n");
+        //for (;;)
+        {
+            bzero(received_message, BUFSIZE);
+            result_size = read(fd, received_message, BUFSIZE);
+            if (result_size == -1)
+            {
+                printf("end of file\n");
+                close(fd);
+                closelog();
+                close(accept_socket);
+                return -1;
+            }
+
+            printf ("%s %dfff\n", received_message, result_size);
+
+            result = send(accept_socket, received_message, result_size, 0);
+
+            if(result < 0)
+            {
+                printf("send failed\n");
+                close(fd);
+                closelog();
+                close(accept_socket);
+                return -1;
+            }
+
+            /*if (received_message[result_size - 1] == '\n')
+            {
+                printf("data finished\n");
+                
+                break;
+            }*/
+            
+        }
+
+        close(fd);
+        closelog();
+    }
+
+    close(accept_socket);
     return 0;
 }
+
 //int listen(int sockfd, int backlog);
 
        /*#define MY_SOCK_PATH "/somepath"
