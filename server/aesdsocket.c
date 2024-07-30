@@ -14,11 +14,16 @@
 #define SERVER_PORT 9000
 #define BUFSIZE 100
 char* file_name = "/var/tmp/aesdsocketdata";
+char* daemon_arg = "-c";
 int accept_socket;
+int run_as_daemon = 0;
 
 void signal_handler(int signal)
-{ 
-    printf("signal receive\n");
+{
+    if (run_as_daemon == 0)
+    {
+        printf("signal receive\n");
+    }
     remove(file_name);
     syslog(LOG_DEBUG, "Caught signal, exiting");
     close(accept_socket);
@@ -31,6 +36,15 @@ int main(int argc, char *argv[])
     openlog(NULL, 0, LOG_USER);
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
+
+    if (argc == 2)
+    {
+        if (0 == strcmp(argv[1], daemon_arg))
+        {
+            printf("run as daemon\n");
+            run_as_daemon = 1;
+        }
+    }
 
     printf("Server started\n");
     const char localhost[] = "localhost";
@@ -77,20 +91,43 @@ int main(int argc, char *argv[])
         return -1;
 	}
 
+    if (run_as_daemon == 1)
+    {
+
+        pid_t  pid = fork();
+
+        if (pid < 0)
+        {
+            exit(EXIT_FAILURE);
+        }
+
+        if (pid > 0)
+        {
+            exit(EXIT_SUCCESS);
+        }
+
+    }
+
     for(;;)
     {
         client_address_len = sizeof(client_address);
         accept_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
         if (result < 0)
         {
-            printf("Accept failed\n");
+            if (run_as_daemon == 0)
+            {
+                printf("Accept failed\n");
+            }
             close(accept_socket);
             return -1;
         }
 
         char *client_add = inet_ntoa(client_address.sin_addr);
         syslog(LOG_DEBUG, "Accepted connection from %s", client_add);
-        printf("Accepted connection from %s\n", client_add);
+        if (run_as_daemon == 0)
+        {
+            printf("Accepted connection from %s\n", client_add);
+        }
 
         // read
 
@@ -98,7 +135,10 @@ int main(int argc, char *argv[])
         fd = fopen(file_name, "a");
         if(fd < 0)
         {
-            printf("cannot create file %s\n", file_name);
+            if (run_as_daemon == 0)
+            {
+                printf("cannot create file %s\n", file_name);
+            }
             closelog();
             close(accept_socket);
             return -1;
@@ -114,7 +154,10 @@ int main(int argc, char *argv[])
     
                 if(result < 0)
                 {
-                    printf("write failed\n");
+                    if (run_as_daemon == 0)
+                    {
+                        printf("write failed\n");
+                    }
                     close(fd);
                     closelog();
                     close(accept_socket);
@@ -123,7 +166,10 @@ int main(int argc, char *argv[])
     
                 if (received_message[result_size - 1] == '\n')
                 {
-                    printf("data finished\n");
+                    if (run_as_daemon == 0)
+                    {
+                        printf("data finished\n");
+                    }
                     break;
                 }
             }
@@ -139,7 +185,10 @@ int main(int argc, char *argv[])
         fp = fopen(file_name, "r");
         if(fp < 0)
         {
-            printf("cannot open file %s\n", file_name);
+            if (run_as_daemon == 0)
+            {
+                printf("cannot open file %s\n", file_name);
+            }
             closelog();
             close(accept_socket);
             return -1;
@@ -151,7 +200,10 @@ int main(int argc, char *argv[])
                 result_size = getline(&read_line, &line_size, fp);
                 if (result_size == -1)
                 {
-                    printf("end of file\n");
+                    if (run_as_daemon == 0)
+                    {
+                        printf("end of file\n");
+                    }
                     break;
                 }
     
@@ -159,7 +211,10 @@ int main(int argc, char *argv[])
     
                 if(result < 0)
                 {
-                    printf("send failed\n");
+                    if (run_as_daemon == 0)
+                    {
+                        printf("send failed\n");
+                    }
                     close(fd);
                     closelog();
                     close(accept_socket);
