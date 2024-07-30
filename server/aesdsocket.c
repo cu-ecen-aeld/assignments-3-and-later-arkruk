@@ -1,28 +1,45 @@
-#include<sys/socket.h>
-#include<sys/types.h>
-#include<netinet/in.h>
-#include<arpa/inet.h>
-#include<stdio.h>
-#include<string.h>
-#include<netdb.h>
-#include<syslog.h>
-#include<fcntl.h>
-#include<unistd.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <string.h>
+#include <netdb.h>
+#include <syslog.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <signal.h>
+#include <stdlib.h>
 
 #define SERVER_PORT 9000
 #define BUFSIZE 100
+char* file_name = "/var/tmp/aesdsocketdata";
+int accept_socket;
+
+void signal_handler(int signal)
+{ 
+    printf("signal receive\n");
+    remove(file_name);
+    syslog(LOG_DEBUG, "Caught signal, exiting");
+    close(accept_socket);
+    closelog();
+    exit(0);
+}
 
 int main(int argc, char *argv[])
 {
+    openlog(NULL, 0, LOG_USER);
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
+
     printf("Server started\n");
     const char localhost[] = "localhost";
-    int server_socket, result, client_address_len, result_size, accept_socket;
+    int server_socket, result, client_address_len, result_size;
     struct sockaddr_in address, client_address;
     struct hostent *host;
     bzero((char *) &address, sizeof(address));
     address.sin_family = AF_INET;
     address.sin_port = htons (SERVER_PORT);
-    char* file_name = "/var/tmp/aesdsocketdata";
 
     char received_message[BUFSIZE];
 
@@ -60,158 +77,106 @@ int main(int argc, char *argv[])
         return -1;
 	}
 
-for(int i = 0; i < 5; i++)
-{
-    client_address_len = sizeof(client_address);
-    accept_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
-    if (result < 0)
+    for(;;)
     {
-		printf("Accept failed\n");
-        close(accept_socket);
-        return -1;
-    }
-
-    openlog(NULL, 0, LOG_USER);
-
-    char *client_add = inet_ntoa(client_address.sin_addr);
-    syslog(LOG_DEBUG, "Accepted connection from %s", client_add);
-    printf("Accepted connection from %s\n", client_add);
-
-    printf("Start\n\n"); 
-    // read
-    FILE * fd;
-    fd = fopen(file_name, "a");
-    //open(file_name, O_CREAT|O_WRONLY|O_TRUNC, S_IROTH | S_IWOTH | S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP);
-    if(fd < 0)
-    {
-        printf("cannot create file %s\n", file_name);
-        closelog();
-        close(accept_socket);
-        return -1;
-    }
-    else
-    {
-        for (;;)
+        client_address_len = sizeof(client_address);
+        accept_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
+        if (result < 0)
         {
-            bzero(received_message, BUFSIZE);
-
-            result_size = read(accept_socket, received_message, BUFSIZE);
-            if (result_size!=0)
-            {
-                printf ("DATA size: %d %d\n", result_size, i);
-            }
-            result = fwrite(received_message, sizeof(char), result_size, fd);
-
-            //result = write(fd, received_message, result_size);
-
-            if(result < 0)
-            {
-                printf("write failed\n");
-                close(fd);
-                closelog();
-                close(accept_socket);
-                return -1;
-            }
-
-            if (received_message[result_size - 1] == '\n')
-            {
-                printf("data finished\n");
-                break;
-            }
+            printf("Accept failed\n");
+            close(accept_socket);
+            return -1;
         }
 
-        fclose(fd);
-        closelog();
-    }
+        char *client_add = inet_ntoa(client_address.sin_addr);
+        syslog(LOG_DEBUG, "Accepted connection from %s", client_add);
+        printf("Accepted connection from %s\n", client_add);
 
-    // send
-    //fd = open(file_name, O_RDONLY | O_TRUNC, S_IROTH | S_IWOTH | S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP);
-printf("SEND\n");
-    FILE * fp;
-    char * line = NULL;
-    size_t len = 0;
-    fp = fopen(file_name, "r");
-    if(fp < 0)
-    {
-        printf("111\n");
-        printf("cannot open file %s\n", file_name);
-        closelog();
-        close(accept_socket);
-        return -1;
-    }
-    else
-    {
-        printf("2222\n");
-        for (;;)
+        // read
+
+        FILE * fd;
+        fd = fopen(file_name, "a");
+        if(fd < 0)
         {
-            //bzero(received_message, BUFSIZE);
-            //result_size = read(fd, received_message, BUFSIZE);
-            result_size = getline(&line, &len, fp);
-            printf("size %d\n", result_size);
-            if (result_size == -1)
-            {
-                printf("end of file\n");
-                break;
-            }
-            for(int i = 0; i < result_size; i++)
-            {
-                printf ("%c", line[i]);
-            }
-            printf ("\n\n");
-            printf ("%s %dfff\n", received_message, result_size);
-
-            result = send(accept_socket, line, result_size, 0);
-
-            if(result < 0)
-            {
-                printf("send failed\n");
-                close(fd);
-                closelog();
-                close(accept_socket);
-                return -1;
-            }
-
-            /*if (received_message[result_size - 1] == '\n')
-            {
-                printf("data finished\n");
-                
-                break;
-            }*/
-            
+            printf("cannot create file %s\n", file_name);
+            closelog();
+            close(accept_socket);
+            return -1;
         }
-        fclose(fp);
-        if (line)
-            free(line);
-        
+        else
+        {
+            for (;;)
+            {
+                bzero(received_message, BUFSIZE);
+    
+                result_size = read(accept_socket, received_message, BUFSIZE);
+                result = fwrite(received_message, sizeof(char), result_size, fd);
+    
+                if(result < 0)
+                {
+                    printf("write failed\n");
+                    close(fd);
+                    closelog();
+                    close(accept_socket);
+                    return -1;
+                }
+    
+                if (received_message[result_size - 1] == '\n')
+                {
+                    printf("data finished\n");
+                    break;
+                }
+            }
 
-    }
+            fclose(fd);
+            closelog();
+        }
+
+        // send
+        FILE * fp;
+        char * read_line = NULL;
+        size_t line_size = 0;
+        fp = fopen(file_name, "r");
+        if(fp < 0)
+        {
+            printf("cannot open file %s\n", file_name);
+            closelog();
+            close(accept_socket);
+            return -1;
+        }
+        else
+        {
+            for (;;)
+            {
+                result_size = getline(&read_line, &line_size, fp);
+                if (result_size == -1)
+                {
+                    printf("end of file\n");
+                    break;
+                }
+    
+                result = send(accept_socket, read_line, result_size, 0);
+    
+                if(result < 0)
+                {
+                    printf("send failed\n");
+                    close(fd);
+                    closelog();
+                    close(accept_socket);
+                    return -1;
+                }
+            }
+    
+            fclose(fp);
+            if (read_line)
+            {
+                free(read_line);
+            }
+        }
         close(accept_socket);
-    //sleep(2);
-}
+        syslog(LOG_DEBUG, "Closed connection from %s", client_add);
+    }
     closelog();
 
     return 0;
 }
-
-//int listen(int sockfd, int backlog);
-
-       /*#define MY_SOCK_PATH "/somepath"
-       #define LISTEN_BACKLOG 50
-
-       #define handle_error(msg) \
-           do { perror(msg); exit(EXIT_FAILURE); } while (0)
-
-           struct sockaddr_un  my_addr, peer_addr;
-
-           sfd = socket(AF_UNIX, SOCK_STREAM, 0);
-           if (sfd == -1)
-               handle_error("socket");
-
-           memset(&my_addr, 0, sizeof(my_addr));
-           my_addr.sun_family = AF_UNIX;
-           strncpy(my_addr.sun_path, MY_SOCK_PATH,
-                   sizeof(my_addr.sun_path) - 1);
-
-           if (bind(sfd, (struct sockaddr *) &my_addr,
-                    sizeof(my_addr)) == -1)
-               handle_error("bind");*/
