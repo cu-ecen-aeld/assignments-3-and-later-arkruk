@@ -72,6 +72,7 @@ int main(int argc, char *argv[])
 	
 	if (server_socket == -1)
 	{
+        close(server_socket);
 		printf("Socket not created\n");
         return -1;
 	}
@@ -80,6 +81,7 @@ int main(int argc, char *argv[])
 
 	if (result == -1)
 	{
+        close(server_socket);
 		printf("Bind failed\n");
         return -1;
 	}
@@ -88,6 +90,7 @@ int main(int argc, char *argv[])
 
 	if (result == -1)
 	{
+        close(server_socket);
 		printf("Listen failed\n");
         return -1;
 	}
