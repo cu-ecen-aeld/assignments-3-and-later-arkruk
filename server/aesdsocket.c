@@ -7,6 +7,7 @@
 #include<netdb.h>
 #include<syslog.h>
 #include<fcntl.h>
+#include<unistd.h>
 
 #define SERVER_PORT 9000
 #define BUFSIZE 100
@@ -24,6 +25,8 @@ int main(int argc, char *argv[])
     char* file_name = "/var/tmp/aesdsocketdata";
 
     char received_message[BUFSIZE];
+
+    remove(file_name);
 
     if((host = gethostbyname(localhost)) == NULL)
     {
@@ -57,6 +60,8 @@ int main(int argc, char *argv[])
         return -1;
 	}
 
+for(int i = 0; i < 5; i++)
+{
     client_address_len = sizeof(client_address);
     accept_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
     if (result < 0)
@@ -70,13 +75,13 @@ int main(int argc, char *argv[])
 
     char *client_add = inet_ntoa(client_address.sin_addr);
     syslog(LOG_DEBUG, "Accepted connection from %s", client_add);
-    closelog();
     printf("Accepted connection from %s\n", client_add);
 
-
+    printf("Start\n\n"); 
     // read
-    int fd;
-    fd = open(file_name, O_CREAT|O_WRONLY|O_TRUNC, S_IROTH | S_IWOTH | S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP);
+    FILE * fd;
+    fd = fopen(file_name, "a");
+    //open(file_name, O_CREAT|O_WRONLY|O_TRUNC, S_IROTH | S_IWOTH | S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP);
     if(fd < 0)
     {
         printf("cannot create file %s\n", file_name);
@@ -88,12 +93,16 @@ int main(int argc, char *argv[])
     {
         for (;;)
         {
-            printf("123\n");
             bzero(received_message, BUFSIZE);
 
             result_size = read(accept_socket, received_message, BUFSIZE);
-            printf ("DATA size: %d\n", result_size);
-            result = write(fd, received_message, result_size);
+            if (result_size!=0)
+            {
+                printf ("DATA size: %d %d\n", result_size, i);
+            }
+            result = fwrite(received_message, sizeof(char), result_size, fd);
+
+            //result = write(fd, received_message, result_size);
 
             if(result < 0)
             {
@@ -111,13 +120,18 @@ int main(int argc, char *argv[])
             }
         }
 
-        close(fd);
+        fclose(fd);
         closelog();
     }
 
     // send
-    fd = open(file_name, O_RDONLY | O_TRUNC, S_IROTH | S_IWOTH | S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP);
-    if(fd < 0)
+    //fd = open(file_name, O_RDONLY | O_TRUNC, S_IROTH | S_IWOTH | S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP);
+printf("SEND\n");
+    FILE * fp;
+    char * line = NULL;
+    size_t len = 0;
+    fp = fopen(file_name, "r");
+    if(fp < 0)
     {
         printf("111\n");
         printf("cannot open file %s\n", file_name);
@@ -128,22 +142,25 @@ int main(int argc, char *argv[])
     else
     {
         printf("2222\n");
-        //for (;;)
+        for (;;)
         {
-            bzero(received_message, BUFSIZE);
-            result_size = read(fd, received_message, BUFSIZE);
+            //bzero(received_message, BUFSIZE);
+            //result_size = read(fd, received_message, BUFSIZE);
+            result_size = getline(&line, &len, fp);
+            printf("size %d\n", result_size);
             if (result_size == -1)
             {
                 printf("end of file\n");
-                close(fd);
-                closelog();
-                close(accept_socket);
-                return -1;
+                break;
             }
-
+            for(int i = 0; i < result_size; i++)
+            {
+                printf ("%c", line[i]);
+            }
+            printf ("\n\n");
             printf ("%s %dfff\n", received_message, result_size);
 
-            result = send(accept_socket, received_message, result_size, 0);
+            result = send(accept_socket, line, result_size, 0);
 
             if(result < 0)
             {
@@ -162,12 +179,17 @@ int main(int argc, char *argv[])
             }*/
             
         }
+        fclose(fp);
+        if (line)
+            free(line);
+        
 
-        close(fd);
-        closelog();
     }
+        close(accept_socket);
+    //sleep(2);
+}
+    closelog();
 
-    close(accept_socket);
     return 0;
 }
 
