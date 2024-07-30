@@ -14,7 +14,7 @@
 #define SERVER_PORT 9000
 #define BUFSIZE 100
 char* file_name = "/var/tmp/aesdsocketdata";
-char* daemon_arg = "-c";
+char* daemon_arg = "-d";
 int accept_socket;
 int run_as_daemon = 0;
 
