@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 
     printf("Server started\n");
     const char localhost[] = "localhost";
-    int server_socket, result, client_address_len, result_size;
+    int result, client_address_len, result_size;
     struct sockaddr_in address, client_address;
     struct hostent *host;
     bzero((char *) &address, sizeof(address));
