@@ -15,7 +15,7 @@
 #define BUFSIZE 100
 char* file_name = "/var/tmp/aesdsocketdata";
 char* daemon_arg = "-d";
-int accept_socket;
+int accept_socket, server_socket;
 int run_as_daemon = 0;
 
 void signal_handler(int signal)
@@ -27,6 +27,7 @@ void signal_handler(int signal)
     remove(file_name);
     syslog(LOG_DEBUG, "Caught signal, exiting");
     close(accept_socket);
+    close(server_socket);
     closelog();
     exit(0);
 }
@@ -119,6 +120,7 @@ int main(int argc, char *argv[])
                 printf("Accept failed\n");
             }
             close(accept_socket);
+            close(server_socket);
             return -1;
         }
 
@@ -141,6 +143,7 @@ int main(int argc, char *argv[])
             }
             closelog();
             close(accept_socket);
+            close(server_socket);
             return -1;
         }
         else
@@ -161,6 +164,7 @@ int main(int argc, char *argv[])
                     close(fd);
                     closelog();
                     close(accept_socket);
+                    close(server_socket);
                     return -1;
                 }
     
@@ -191,6 +195,7 @@ int main(int argc, char *argv[])
             }
             closelog();
             close(accept_socket);
+            close(server_socket);
             return -1;
         }
         else
@@ -218,6 +223,7 @@ int main(int argc, char *argv[])
                     close(fd);
                     closelog();
                     close(accept_socket);
+                    close(server_socket);
                     return -1;
                 }
             }
@@ -232,6 +238,7 @@ int main(int argc, char *argv[])
         syslog(LOG_DEBUG, "Closed connection from %s", client_add);
     }
     closelog();
+    close(server_socket);
 
     return 0;
 }
