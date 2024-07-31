@@ -20,7 +20,7 @@ int run_as_daemon = 0;
 
 void signal_handler(int signal)
 {
-    if (run_as_daemon == 0)
+    //if (run_as_daemon == 0)
     {
         printf("signal receive\n");
     }
@@ -37,6 +37,7 @@ int main(int argc, char *argv[])
     openlog(NULL, 0, LOG_USER);
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
+    signal(SIGKILL, signal_handler);
 
     if (argc == 2)
     {
@@ -70,6 +71,24 @@ int main(int argc, char *argv[])
 
     server_socket = socket(AF_INET , SOCK_STREAM , 0);
 	
+    int enable = 1;
+    result = setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable))
+    if(result < 0)
+    {
+        close(server_socket);
+        printf("Cannot set SO_REUSEADDR option\n");
+        return -1;
+    }
+
+    result = setsockopt(server_socket, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(enable)) 
+
+    if(result < 0)
+    {
+        close(server_socket);
+        printf("Cannot set SO_REUSEPORT option\n");
+        return -1;
+    }
+
 	if (server_socket == -1)
 	{
         close(server_socket);
@@ -182,7 +201,6 @@ int main(int argc, char *argv[])
             }
 
             fclose(fd);
-            closelog();
         }
 
         // send
