@@ -20,7 +20,7 @@ int run_as_daemon = 0;
 
 void signal_handler(int signal)
 {
-    //if (run_as_daemon == 0)
+    if (run_as_daemon == 0)
     {
         printf("signal receive\n");
     }
@@ -72,7 +72,8 @@ int main(int argc, char *argv[])
     server_socket = socket(AF_INET , SOCK_STREAM , 0);
 	
     int enable = 1;
-    result = setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable))
+    result = setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
+
     if(result < 0)
     {
         close(server_socket);
@@ -80,7 +81,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    result = setsockopt(server_socket, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(enable)) 
+    result = setsockopt(server_socket, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(enable));
 
     if(result < 0)
     {
@@ -228,7 +229,7 @@ int main(int argc, char *argv[])
                 {
                     if (run_as_daemon == 0)
                     {
-                        printf("end of file\n");
+                        printf("file read is finished\n");
                     }
                     break;
                 }
