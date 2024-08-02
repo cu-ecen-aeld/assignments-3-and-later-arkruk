@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
     }
 
     printf("Server started\n");
-    const char localhost[] = "localhost";
+    const char localhost[] = "0.0.0.0";
     int result, client_address_len, result_size;
     struct sockaddr_in address, client_address;
     struct hostent *host;
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     char received_message[BUFSIZE];
 
     remove(file_name);
-
+  
     if((host = gethostbyname(localhost)) == NULL)
     {
         printf("Cannot get localhost address\n");
