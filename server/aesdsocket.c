@@ -41,16 +41,6 @@ LIST_HEAD(thread_list, thread_element);
 static void timer_thread(union sigval sigval)
 {
     char outstr[200];
-    outstr[0] = 't';
-    outstr[1] = 'i';
-    outstr[2] = 'm';
-    outstr[3] = 'e';
-    outstr[4] = 's';
-    outstr[5] = 't';
-    outstr[6] = 'a';
-    outstr[7] = 'm';
-    outstr[8] = 'p';
-    outstr[9] = ':';
 
     int result;
     time_t t;
@@ -58,7 +48,7 @@ static void timer_thread(union sigval sigval)
     t = time(NULL);
     tmp = localtime(&t);
 
-    strftime(outstr+10, sizeof(outstr)-10, "%Y%m%d%H%M%S\n", tmp);
+    strftime(outstr, sizeof(outstr), "timestamp:%Y%m%d%H%M%S\n", tmp);
     pthread_mutex_lock(&data_mutex);
 
     FILE * fd;
@@ -88,53 +78,20 @@ static void timer_thread(union sigval sigval)
 
 void signal_handler(int signal)
 {
-    if (signal == SIGALRM)
+    if (run_as_daemon == 0)
     {
-        char outstr[200];
-        printf("ccc\n");
-        time_t t;
-        printf("ddd\n");
-        struct tm *tmp;
-        printf("eee\n");
-        t = time(NULL);
-        printf("ffff\n");
-        tmp = localtime(&t);
-        printf("aaaa\n");
-        strftime(outstr, sizeof(outstr), "%Y%m%d%H%M%S", tmp);
-        printf("%s\n", outstr);
+        printf("signal receive\n");
     }
-    else
-    {
-        if (run_as_daemon == 0)
-        {
-            printf("signal receive\n");
-        }
-        remove(file_name);
-        syslog(LOG_DEBUG, "Caught signal, exiting");
-        close(accept_socket);
-        close(server_socket);
-        closelog();
-        exit(0);
-    }
+    remove(file_name);
+    syslog(LOG_DEBUG, "Caught signal, exiting");
+    close(accept_socket);
+    close(server_socket);
+    closelog();
+    exit(0);
 }
 
 int main(int argc, char *argv[])
 {
-    char outstr[200];
-    printf("ccc\n");
-    time_t t;
-    printf("ddd\n");
-    struct tm *tmp;
-    printf("eee\n");
-    t = time(NULL);
-    printf("ffff\n");
-    tmp = localtime(&t);
-    printf("aaaa\n");
-    strftime(outstr, sizeof(outstr), "%Y%m%d%H%M%S", tmp);
-    // year, month, day, hour (in 24 hour format) minute and second
-    printf("bbbb/n");
-    printf("%s\n", outstr);
-
     struct sigevent sev;
     timer_t timerid;
     struct itimerspec its;
