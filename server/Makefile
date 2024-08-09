@@ -2,10 +2,10 @@ all: aesdsocket
 default: aesdsocket
 
 aesdsocket.o: aesdsocket.c
-	$(CC) -c aesdsocket.c
+	$(CC) -pthread -c aesdsocket.c
 
 aesdsocket: aesdsocket.o
-	$(CC) aesdsocket.o -o aesdsocket
+	$(CC) aesdsocket.o -pthread -o aesdsocket
 
 clean :
 	rm -f aesdsocket.o aesdsocket

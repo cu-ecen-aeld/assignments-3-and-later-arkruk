@@ -1,5 +1,6 @@
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/queue.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdio.h>
@@ -10,6 +11,9 @@
 #include <unistd.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <pthread.h>
+
+void receive_send_method(void* socket_arg);
 
 #define SERVER_PORT 9000
 #define BUFSIZE 100
@@ -17,6 +21,18 @@ char* file_name = "/var/tmp/aesdsocketdata";
 char* daemon_arg = "-d";
 int accept_socket, server_socket;
 int run_as_daemon = 0;
+pthread_mutex_t data_mutex;
+pthread_mutex_t list_mutex;
+
+struct thread_element
+{
+    pthread_t thread_id;
+    int finished;
+    int socket;
+    LIST_ENTRY(thread_element) pointers;
+};
+
+LIST_HEAD(thread_list, thread_element);
 
 void signal_handler(int signal)
 {
@@ -34,6 +50,11 @@ void signal_handler(int signal)
 
 int main(int argc, char *argv[])
 {
+    struct thread_list head;
+    LIST_INIT(&head);
+
+    struct thread_element *element, *pointer;
+
     openlog(NULL, 0, LOG_USER);
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
@@ -50,14 +71,12 @@ int main(int argc, char *argv[])
 
     printf("Server started\n");
     const char localhost[] = "0.0.0.0";
-    int result, client_address_len, result_size;
+    int result, client_address_len;
     struct sockaddr_in address, client_address;
     struct hostent *host;
     bzero((char *) &address, sizeof(address));
     address.sin_family = AF_INET;
     address.sin_port = htons (SERVER_PORT);
-
-    char received_message[BUFSIZE];
 
     remove(file_name);
   
@@ -154,113 +173,154 @@ int main(int argc, char *argv[])
             printf("Accepted connection from %s\n", client_add);
         }
 
-        // read
-
-        FILE * fd;
-        fd = fopen(file_name, "a");
-        if(fd < 0)
+printf("malloc\n");
+        element = malloc(sizeof(struct thread_element));
+        element->finished = 0;
+        element->socket = accept_socket;
+        printf("insert\n");
+        LIST_INSERT_HEAD(&head, element, pointers);
+        printf("insert end\n");
+        result = pthread_create(&element->thread_id, NULL, receive_send_method, (void *)element);
+        printf("thread end\n");
+        if(result != 0)
         {
-            if (run_as_daemon == 0)
-            {
-                printf("cannot create file %s\n", file_name);
-            }
-            closelog();
-            close(accept_socket);
-            close(server_socket);
-            return -1;
-        }
-        else
-        {
-            for (;;)
-            {
-                bzero(received_message, BUFSIZE);
-    
-                result_size = read(accept_socket, received_message, BUFSIZE);
-                result = fwrite(received_message, sizeof(char), result_size, fd);
-    
-                if(result < 0)
-                {
-                    if (run_as_daemon == 0)
-                    {
-                        printf("write failed\n");
-                    }
-                    close(fd);
-                    closelog();
-                    close(accept_socket);
-                    close(server_socket);
-                    return -1;
-                }
-    
-                if (received_message[result_size - 1] == '\n')
-                {
-                    if (run_as_daemon == 0)
-                    {
-                        printf("data finished\n");
-                    }
-                    break;
-                }
-            }
-
-            fclose(fd);
+            printf("Thread create error");
+            //TODO cleanup
         }
 
-        // send
-        FILE * fp;
-        char * read_line = NULL;
-        size_t line_size = 0;
-        fp = fopen(file_name, "r");
-        if(fp < 0)
+        pthread_mutex_lock(&list_mutex);
+        LIST_FOREACH(pointer, &head, pointers)
         {
-            if (run_as_daemon == 0)
+            if (pointer->finished == 1)
             {
-                printf("cannot open file %s\n", file_name);
-            }
-            closelog();
-            close(accept_socket);
-            close(server_socket);
-            return -1;
-        }
-        else
-        {
-            for (;;)
-            {
-                result_size = getline(&read_line, &line_size, fp);
-                if (result_size == -1)
-                {
-                    if (run_as_daemon == 0)
-                    {
-                        printf("file read is finished\n");
-                    }
-                    break;
-                }
-    
-                result = send(accept_socket, read_line, result_size, 0);
-    
-                if(result < 0)
-                {
-                    if (run_as_daemon == 0)
-                    {
-                        printf("send failed\n");
-                    }
-                    close(fd);
-                    closelog();
-                    close(accept_socket);
-                    close(server_socket);
-                    return -1;
-                }
-            }
-    
-            fclose(fp);
-            if (read_line)
-            {
-                free(read_line);
+                pthread_join(pointer->thread_id, NULL);
+                pointer->finished = 0;
             }
         }
-        close(accept_socket);
-        syslog(LOG_DEBUG, "Closed connection from %s", client_add);
+        pthread_mutex_unlock(&list_mutex);
+
+      /*  (accept_socket);
+          pthread_t hello_world_thread;
+    int result = pthread_create(&hello_world_thread, NULL, hello_world, (void *) argv[0]);
+*/
     }
     closelog();
     close(server_socket);
 
     return 0;
+}
+
+void receive_send_method(void* element)
+{
+    printf("receive_send_method\n");
+    char received_message[BUFSIZE];
+    int result_size;
+    int result;
+    int socket = ((struct thread_element*)element)->socket;
+
+        // read
+    pthread_mutex_lock(&data_mutex);
+    FILE * fd;
+    fd = fopen(file_name, "a");
+    if(fd < 0)
+    {
+        if (run_as_daemon == 0)
+        {
+            printf("cannot create file %s\n", file_name);
+        }
+        closelog();
+        close(socket);
+        return -1;
+    }
+    else
+    {
+        for (;;)
+        {
+            bzero(received_message, BUFSIZE);
+
+            result_size = read(socket, received_message, BUFSIZE);
+            result = fwrite(received_message, sizeof(char), result_size, fd);
+
+            if(result < 0)
+            {
+                if (run_as_daemon == 0)
+                {
+                    printf("write failed\n");
+                }
+                close(fd);
+                closelog();
+                close(socket);
+                return -1;
+            }
+
+            if (received_message[result_size - 1] == '\n')
+            {
+                if (run_as_daemon == 0)
+                {
+                    printf("data finished\n");
+                }
+                break;
+            }
+        }
+        fclose(fd);
+    }
+
+    // send
+    FILE * fp;
+    char * read_line = NULL;
+    size_t line_size = 0;
+    fp = fopen(file_name, "r");
+    if(fp < 0)
+    {
+        if (run_as_daemon == 0)
+        {
+            printf("cannot open file %s\n", file_name);
+        }
+        closelog();
+        close(socket);
+        return -1;
+    }
+    else
+    {
+        for (;;)
+        {
+            result_size = getline(&read_line, &line_size, fp);
+            if (result_size == -1)
+            {
+                if (run_as_daemon == 0)
+                {
+                    printf("file read is finished\n");
+                }
+                break;
+            }
+
+            result = send(socket, read_line, result_size, 0);
+    
+            if(result < 0)
+            {
+                if (run_as_daemon == 0)
+                {
+                    printf("send failed\n");
+                }
+                close(fd);
+                closelog();
+                close(socket);
+                return -1;
+            }
+        }
+    
+        fclose(fp);
+        if (read_line)
+        {
+            free(read_line);
+        }
+    }
+    close(socket);
+    pthread_mutex_unlock(&data_mutex);
+
+    pthread_mutex_lock(&list_mutex);
+    ((struct thread_element*)element)->finished = 1;
+    pthread_mutex_unlock(&list_mutex);
+    syslog(LOG_DEBUG, "Closed connection from");// %s", client_add);
+    printf("receive_send_method end\n");
 }
