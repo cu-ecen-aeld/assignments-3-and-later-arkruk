@@ -27,6 +27,8 @@ int accept_socket, server_socket;
 int run_as_daemon = 0;
 pthread_mutex_t data_mutex;
 pthread_mutex_t list_mutex;
+struct thread_element *element, *pointer, pointer_temp;
+timer_t timerid;
 
 struct thread_element
 {
@@ -37,6 +39,18 @@ struct thread_element
 };
 
 LIST_HEAD(thread_list, thread_element);
+struct thread_list head;
+
+void free_queue()
+{
+    pthread_mutex_lock(&list_mutex);
+    LIST_FOREACH(pointer, &head, pointers) {
+        pthread_join(pointer->thread_id, NULL);
+        LIST_REMOVE(pointer, pointers);
+        free(pointer);
+    }
+    pthread_mutex_unlock(&list_mutex);
+}
 
 static void timer_thread(union sigval sigval)
 {
@@ -82,6 +96,9 @@ void signal_handler(int signal)
     {
         printf("signal receive\n");
     }
+    timer_delete(timerid);
+    free_queue();
+
     remove(file_name);
     syslog(LOG_DEBUG, "Caught signal, exiting");
     close(accept_socket);
@@ -93,7 +110,7 @@ void signal_handler(int signal)
 int main(int argc, char *argv[])
 {
     struct sigevent sev;
-    timer_t timerid;
+
     struct itimerspec its;
     int clock_id = CLOCK_MONOTONIC;
     memset(&sev, 0, sizeof(struct sigevent));
@@ -104,6 +121,7 @@ int main(int argc, char *argv[])
     if (timer_create(clock_id, &sev, &timerid) == -1)
     {
         printf("create timer failed\n");
+        timer_delete(timerid);
         return -1;
     }
 
@@ -115,13 +133,11 @@ int main(int argc, char *argv[])
     if (timer_settime(timerid, 0, &its, NULL) == -1)
     {
         printf("set timer failed\n");
+        timer_delete(timerid);
         return -1;
     }
 
-    struct thread_list head;
     LIST_INIT(&head);
-
-    struct thread_element *element, *pointer;
 
     openlog(NULL, 0, LOG_USER);
     signal(SIGINT, signal_handler);
@@ -151,6 +167,7 @@ int main(int argc, char *argv[])
     if((host = gethostbyname(localhost)) == NULL)
     {
         printf("Cannot get localhost address\n");
+        timer_delete(timerid);
         return -1;
     }
 
@@ -164,6 +181,7 @@ int main(int argc, char *argv[])
     if(result < 0)
     {
         close(server_socket);
+        timer_delete(timerid);
         printf("Cannot set SO_REUSEADDR option\n");
         return -1;
     }
@@ -173,6 +191,7 @@ int main(int argc, char *argv[])
     if(result < 0)
     {
         close(server_socket);
+        timer_delete(timerid);
         printf("Cannot set SO_REUSEPORT option\n");
         return -1;
     }
@@ -180,6 +199,7 @@ int main(int argc, char *argv[])
 	if (server_socket == -1)
 	{
         close(server_socket);
+        timer_delete(timerid);
 		printf("Socket not created\n");
         return -1;
 	}
@@ -189,6 +209,7 @@ int main(int argc, char *argv[])
 	if (result == -1)
 	{
         close(server_socket);
+        timer_delete(timerid);
 		printf("Bind failed\n");
         return -1;
 	}
@@ -198,6 +219,7 @@ int main(int argc, char *argv[])
 	if (result == -1)
 	{
         close(server_socket);
+        timer_delete(timerid);
 		printf("Listen failed\n");
         return -1;
 	}
@@ -225,6 +247,10 @@ int main(int argc, char *argv[])
         accept_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
         if (result < 0)
         {
+
+            free_queue();
+            timer_delete(timerid);
+
             if (run_as_daemon == 0)
             {
                 printf("Accept failed\n");
@@ -249,24 +275,19 @@ int main(int argc, char *argv[])
         if(result != 0)
         {
             printf("Thread create error");
-            //TODO cleanup
         }
 
         pthread_mutex_lock(&list_mutex);
-        LIST_FOREACH(pointer, &head, pointers)
-        {
+        LIST_FOREACH(pointer, &head, pointers) {
             if (pointer->finished == 1)
             {
                 pthread_join(pointer->thread_id, NULL);
-                pointer->finished = 0;
+                LIST_REMOVE(pointer, pointers);
+                free(pointer);
+                //pointer->finished = 0;
             }
         }
         pthread_mutex_unlock(&list_mutex);
-
-      /*  (accept_socket);
-          pthread_t hello_world_thread;
-    int result = pthread_create(&hello_world_thread, NULL, hello_world, (void *) argv[0]);
-*/
     }
     closelog();
     close(server_socket);
