@@ -12,11 +12,15 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <time.h>
+#include <signal.h>
 
 void receive_send_method(void* socket_arg);
 
 #define SERVER_PORT 9000
 #define BUFSIZE 100
+#define SIG SIGRTMIN
+
 char* file_name = "/var/tmp/aesdsocketdata";
 char* daemon_arg = "-d";
 int accept_socket, server_socket;
@@ -34,22 +38,129 @@ struct thread_element
 
 LIST_HEAD(thread_list, thread_element);
 
+static void timer_thread(union sigval sigval)
+{
+    char outstr[200];
+    outstr[0] = 't';
+    outstr[1] = 'i';
+    outstr[2] = 'm';
+    outstr[3] = 'e';
+    outstr[4] = 's';
+    outstr[5] = 't';
+    outstr[6] = 'a';
+    outstr[7] = 'm';
+    outstr[8] = 'p';
+    outstr[9] = ':';
+
+    int result;
+    time_t t;
+    struct tm *tmp;
+    t = time(NULL);
+    tmp = localtime(&t);
+
+    strftime(outstr+10, sizeof(outstr)-10, "%Y%m%d%H%M%S\n", tmp);
+    pthread_mutex_lock(&data_mutex);
+
+    FILE * fd;
+    fd = fopen(file_name, "a");
+    if(fd < 0)
+    {
+        if (run_as_daemon == 0)
+        {
+            printf("cannot create file %s\n", file_name);
+        }
+        fclose(fd);
+        return;
+    }
+    else
+    {
+        result = fwrite(outstr, sizeof(char), strlen(outstr), fd);
+
+        if(result < 0)
+        {
+            printf("Write file failed\n");
+        }
+        fclose(fd);
+    }
+
+    pthread_mutex_unlock(&data_mutex);
+}
+
 void signal_handler(int signal)
 {
-    if (run_as_daemon == 0)
+    if (signal == SIGALRM)
     {
-        printf("signal receive\n");
+        char outstr[200];
+        printf("ccc\n");
+        time_t t;
+        printf("ddd\n");
+        struct tm *tmp;
+        printf("eee\n");
+        t = time(NULL);
+        printf("ffff\n");
+        tmp = localtime(&t);
+        printf("aaaa\n");
+        strftime(outstr, sizeof(outstr), "%Y%m%d%H%M%S", tmp);
+        printf("%s\n", outstr);
     }
-    remove(file_name);
-    syslog(LOG_DEBUG, "Caught signal, exiting");
-    close(accept_socket);
-    close(server_socket);
-    closelog();
-    exit(0);
+    else
+    {
+        if (run_as_daemon == 0)
+        {
+            printf("signal receive\n");
+        }
+        remove(file_name);
+        syslog(LOG_DEBUG, "Caught signal, exiting");
+        close(accept_socket);
+        close(server_socket);
+        closelog();
+        exit(0);
+    }
 }
 
 int main(int argc, char *argv[])
 {
+    char outstr[200];
+    printf("ccc\n");
+    time_t t;
+    printf("ddd\n");
+    struct tm *tmp;
+    printf("eee\n");
+    t = time(NULL);
+    printf("ffff\n");
+    tmp = localtime(&t);
+    printf("aaaa\n");
+    strftime(outstr, sizeof(outstr), "%Y%m%d%H%M%S", tmp);
+    // year, month, day, hour (in 24 hour format) minute and second
+    printf("bbbb/n");
+    printf("%s\n", outstr);
+
+    struct sigevent sev;
+    timer_t timerid;
+    struct itimerspec its;
+    int clock_id = CLOCK_MONOTONIC;
+    memset(&sev, 0, sizeof(struct sigevent));
+    
+    sev.sigev_notify = SIGEV_THREAD;
+    sev.sigev_value.sival_ptr = &timerid;
+    sev.sigev_notify_function = timer_thread;
+    if (timer_create(clock_id, &sev, &timerid) == -1)
+    {
+        printf("create timer failed\n");
+        return -1;
+    }
+
+    its.it_value.tv_sec = 10;
+    its.it_value.tv_nsec = 0;
+    its.it_interval.tv_sec = its.it_value.tv_sec;
+    its.it_interval.tv_nsec = its.it_value.tv_nsec;
+
+    if (timer_settime(timerid, 0, &its, NULL) == -1)
+    {
+        printf("set timer failed\n");
+        return -1;
+    }
+
     struct thread_list head;
     LIST_INIT(&head);
 
@@ -173,15 +284,11 @@ int main(int argc, char *argv[])
             printf("Accepted connection from %s\n", client_add);
         }
 
-printf("malloc\n");
         element = malloc(sizeof(struct thread_element));
         element->finished = 0;
         element->socket = accept_socket;
-        printf("insert\n");
         LIST_INSERT_HEAD(&head, element, pointers);
-        printf("insert end\n");
         result = pthread_create(&element->thread_id, NULL, receive_send_method, (void *)element);
-        printf("thread end\n");
         if(result != 0)
         {
             printf("Thread create error");
@@ -212,7 +319,6 @@ printf("malloc\n");
 
 void receive_send_method(void* element)
 {
-    printf("receive_send_method\n");
     char received_message[BUFSIZE];
     int result_size;
     int result;
@@ -322,5 +428,4 @@ void receive_send_method(void* element)
     ((struct thread_element*)element)->finished = 1;
     pthread_mutex_unlock(&list_mutex);
     syslog(LOG_DEBUG, "Closed connection from");// %s", client_add);
-    printf("receive_send_method end\n");
 }
