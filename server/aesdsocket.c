@@ -54,9 +54,12 @@ void free_queue()
     pthread_mutex_unlock(&list_mutex);
 }
 
+char outstr[200];
+int timerset = 0;
+
 static void timer_thread(union sigval sigval)
 {
-    char outstr[200];
+
     time_t t;
     struct tm *tmp;
     int result;
@@ -64,10 +67,9 @@ static void timer_thread(union sigval sigval)
     t = time(NULL);
     tmp = localtime(&t);
 
-    strftime(outstr, sizeof(outstr), "timestamp:%Y%m%d%H%M%S\n", tmp);
-    printf("SAVE TIMEOUT1");
     pthread_mutex_lock(&data_mutex);
-    printf("SAVE TIMEOUT");
+
+    strftime(outstr, sizeof(outstr), "timestamp:%Y%m%d%H%M%S\n", tmp);
     FILE * fd;
     fd = fopen(file_name, "a");
     if(fd < 0)
@@ -76,6 +78,7 @@ static void timer_thread(union sigval sigval)
         {
             printf("cannot create file %s\n", file_name);
         }
+        fflush(fd);
         fclose(fd);
         return;
     }
@@ -87,6 +90,7 @@ static void timer_thread(union sigval sigval)
         {
             printf("Write file failed\n");
         }
+        fflush(fd);
         fclose(fd);
     }
 
@@ -116,31 +120,6 @@ int main(int argc, char *argv[])
     struct sigevent sev;
 
     struct itimerspec its;
-    int clock_id = CLOCK_REALTIME;
-    memset(&sev, 0, sizeof(struct sigevent));
-    
-    sev.sigev_notify = SIGEV_THREAD;
-    sev.sigev_value.sival_ptr = &timerid;
-    sev.sigev_notify_function = timer_thread;
-    sev.sigev_notify_attributes = NULL;
-    if (timer_create(clock_id, &sev, &timerid) == -1)
-    {
-        printf("create timer failed\n");
-        timer_delete(timerid);
-        return -1;
-    }
-
-    its.it_value.tv_sec = 10;
-    its.it_value.tv_nsec = 0;
-    its.it_interval.tv_sec = its.it_value.tv_sec;
-    its.it_interval.tv_nsec = its.it_value.tv_nsec;
-
-    if (timer_settime(timerid, 0, &its, NULL) == -1)
-    {
-        printf("set timer failed\n");
-        timer_delete(timerid);
-        return -1;
-    }
 
     LIST_INIT(&head);
 
@@ -243,6 +222,32 @@ int main(int argc, char *argv[])
             exit(EXIT_SUCCESS);
         }
 
+    }
+
+    int clock_id = CLOCK_REALTIME;
+    memset(&sev, 0, sizeof(struct sigevent));
+    
+    sev.sigev_notify = SIGEV_THREAD;
+    sev.sigev_value.sival_ptr = &timerid;
+    sev.sigev_notify_function = timer_thread;
+    sev.sigev_notify_attributes = NULL;
+    if (timer_create(clock_id, &sev, &timerid) == -1)
+    {
+        printf("create timer failed\n");
+        timer_delete(timerid);
+        return -1;
+    }
+
+    its.it_value.tv_sec = 10;
+    its.it_value.tv_nsec = 0;
+    its.it_interval.tv_sec = its.it_value.tv_sec;
+    its.it_interval.tv_nsec = its.it_value.tv_nsec;
+
+    if (timer_settime(timerid, 0, &its, NULL) == -1)
+    {
+        printf("set timer failed\n");
+        timer_delete(timerid);
+        return -1;
     }
 
     for(;;)
@@ -393,7 +398,7 @@ void receive_send_method(void* element)
                 {
                     printf("send failed\n");
                 }
-                close(fd);
+                close(fp);
                 closelog();
                 close(socket);
                 return -1;
