@@ -27,8 +27,9 @@ int accept_socket, server_socket;
 int run_as_daemon = 0;
 pthread_mutex_t data_mutex;
 pthread_mutex_t list_mutex;
-struct thread_element *element, *pointer, pointer_temp;
+struct thread_element *element, *pointer, *pointer_temp;
 timer_t timerid;
+
 
 struct thread_element
 {
@@ -46,8 +47,9 @@ void free_queue()
     pthread_mutex_lock(&list_mutex);
     LIST_FOREACH(pointer, &head, pointers) {
         pthread_join(pointer->thread_id, NULL);
+        pointer_temp = pointer;
         LIST_REMOVE(pointer, pointers);
-        free(pointer);
+        free(pointer_temp);
     }
     pthread_mutex_unlock(&list_mutex);
 }
@@ -55,16 +57,17 @@ void free_queue()
 static void timer_thread(union sigval sigval)
 {
     char outstr[200];
-
-    int result;
     time_t t;
     struct tm *tmp;
+    int result;
+
     t = time(NULL);
     tmp = localtime(&t);
 
     strftime(outstr, sizeof(outstr), "timestamp:%Y%m%d%H%M%S\n", tmp);
+    printf("SAVE TIMEOUT1");
     pthread_mutex_lock(&data_mutex);
-
+    printf("SAVE TIMEOUT");
     FILE * fd;
     fd = fopen(file_name, "a");
     if(fd < 0)
@@ -96,10 +99,10 @@ void signal_handler(int signal)
     {
         printf("signal receive\n");
     }
-    timer_delete(timerid);
+    //timer_delete(timerid);
     free_queue();
 
-    remove(file_name);
+    //remove(file_name);
     syslog(LOG_DEBUG, "Caught signal, exiting");
     close(accept_socket);
     close(server_socket);
@@ -109,15 +112,17 @@ void signal_handler(int signal)
 
 int main(int argc, char *argv[])
 {
+    remove(file_name);
     struct sigevent sev;
 
     struct itimerspec its;
-    int clock_id = CLOCK_MONOTONIC;
+    int clock_id = CLOCK_REALTIME;
     memset(&sev, 0, sizeof(struct sigevent));
     
     sev.sigev_notify = SIGEV_THREAD;
     sev.sigev_value.sival_ptr = &timerid;
     sev.sigev_notify_function = timer_thread;
+    sev.sigev_notify_attributes = NULL;
     if (timer_create(clock_id, &sev, &timerid) == -1)
     {
         printf("create timer failed\n");
@@ -162,8 +167,6 @@ int main(int argc, char *argv[])
     address.sin_family = AF_INET;
     address.sin_port = htons (SERVER_PORT);
 
-    remove(file_name);
-  
     if((host = gethostbyname(localhost)) == NULL)
     {
         printf("Cannot get localhost address\n");
@@ -174,7 +177,7 @@ int main(int argc, char *argv[])
     memcpy(&address.sin_addr, host->h_addr_list[0], host->h_length);
 
     server_socket = socket(AF_INET , SOCK_STREAM , 0);
-	
+
     int enable = 1;
     result = setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
 
@@ -185,7 +188,7 @@ int main(int argc, char *argv[])
         printf("Cannot set SO_REUSEADDR option\n");
         return -1;
     }
-
+	  
     result = setsockopt(server_socket, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(enable));
 
     if(result < 0)
@@ -205,7 +208,7 @@ int main(int argc, char *argv[])
 	}
 
     result = bind(server_socket, (struct sockaddr *) &address, sizeof (address));
-
+ printf("Server vbbb\n");
 	if (result == -1)
 	{
         close(server_socket);
@@ -213,8 +216,9 @@ int main(int argc, char *argv[])
 		printf("Bind failed\n");
         return -1;
 	}
-
+    printf("server_socket123");
     result = listen(server_socket, 5);
+    printf("server_socketend");
 
 	if (result == -1)
 	{
@@ -244,7 +248,9 @@ int main(int argc, char *argv[])
     for(;;)
     {
         client_address_len = sizeof(client_address);
+        printf("aacept1");
         accept_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
+        printf("aacept2");
         if (result < 0)
         {
 
@@ -276,14 +282,15 @@ int main(int argc, char *argv[])
         {
             printf("Thread create error");
         }
-
+        element = NULL;
         pthread_mutex_lock(&list_mutex);
         LIST_FOREACH(pointer, &head, pointers) {
             if (pointer->finished == 1)
             {
                 pthread_join(pointer->thread_id, NULL);
+                pointer_temp = pointer;
                 LIST_REMOVE(pointer, pointers);
-                free(pointer);
+                free(pointer_temp);
                 //pointer->finished = 0;
             }
         }
