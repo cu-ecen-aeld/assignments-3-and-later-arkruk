@@ -27,7 +27,6 @@ int accept_socket, server_socket;
 int run_as_daemon = 0;
 pthread_mutex_t data_mutex;
 pthread_mutex_t list_mutex;
-struct thread_element *element, *pointer, *pointer_temp;
 timer_t timerid;
 
 
@@ -44,12 +43,17 @@ struct thread_list head;
 
 void free_queue()
 {
+    struct thread_element *pointer = NULL;
     pthread_mutex_lock(&list_mutex);
-    LIST_FOREACH(pointer, &head, pointers) {
-        pthread_join(pointer->thread_id, NULL);
-        pointer_temp = pointer;
-        LIST_REMOVE(pointer, pointers);
-        free(pointer_temp);
+    while (!LIST_EMPTY(&head)) {
+
+	    pointer = LIST_FIRST(&head);
+        if (pointer->finished != -1)
+        {
+            pthread_join(pointer->thread_id, NULL);
+        }
+	    LIST_REMOVE(pointer, pointers);
+	    free(pointer);
     }
     pthread_mutex_unlock(&list_mutex);
 }
@@ -103,10 +107,9 @@ void signal_handler(int signal)
     {
         printf("signal receive\n");
     }
-    //timer_delete(timerid);
+    timer_delete(timerid);
     free_queue();
 
-    //remove(file_name);
     syslog(LOG_DEBUG, "Caught signal, exiting");
     close(accept_socket);
     close(server_socket);
@@ -120,7 +123,8 @@ int main(int argc, char *argv[])
     struct sigevent sev;
 
     struct itimerspec its;
-
+    struct thread_element *element = NULL;
+    struct thread_element *pointer = NULL;
     LIST_INIT(&head);
 
     openlog(NULL, 0, LOG_USER);
@@ -187,7 +191,6 @@ int main(int argc, char *argv[])
 	}
 
     result = bind(server_socket, (struct sockaddr *) &address, sizeof (address));
- printf("Server vbbb\n");
 	if (result == -1)
 	{
         close(server_socket);
@@ -195,9 +198,7 @@ int main(int argc, char *argv[])
 		printf("Bind failed\n");
         return -1;
 	}
-    printf("server_socket123");
     result = listen(server_socket, 5);
-    printf("server_socketend");
 
 	if (result == -1)
 	{
@@ -253,9 +254,8 @@ int main(int argc, char *argv[])
     for(;;)
     {
         client_address_len = sizeof(client_address);
-        printf("aacept1");
         accept_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
-        printf("aacept2");
+
         if (result < 0)
         {
 
@@ -293,10 +293,7 @@ int main(int argc, char *argv[])
             if (pointer->finished == 1)
             {
                 pthread_join(pointer->thread_id, NULL);
-                pointer_temp = pointer;
-                LIST_REMOVE(pointer, pointers);
-                free(pointer_temp);
-                //pointer->finished = 0;
+                pointer->finished = -1;
             }
         }
         pthread_mutex_unlock(&list_mutex);
@@ -314,7 +311,7 @@ void receive_send_method(void* element)
     int result;
     int socket = ((struct thread_element*)element)->socket;
 
-        // read
+    // read
     pthread_mutex_lock(&data_mutex);
     FILE * fd;
     fd = fopen(file_name, "a");
@@ -326,7 +323,7 @@ void receive_send_method(void* element)
         }
         closelog();
         close(socket);
-        return -1;
+        return;
     }
     else
     {
@@ -346,7 +343,7 @@ void receive_send_method(void* element)
                 close(fd);
                 closelog();
                 close(socket);
-                return -1;
+                return;
             }
 
             if (received_message[result_size - 1] == '\n')
@@ -374,7 +371,7 @@ void receive_send_method(void* element)
         }
         closelog();
         close(socket);
-        return -1;
+        return;
     }
     else
     {
@@ -401,7 +398,7 @@ void receive_send_method(void* element)
                 close(fp);
                 closelog();
                 close(socket);
-                return -1;
+                return;
             }
         }
     
@@ -417,5 +414,5 @@ void receive_send_method(void* element)
     pthread_mutex_lock(&list_mutex);
     ((struct thread_element*)element)->finished = 1;
     pthread_mutex_unlock(&list_mutex);
-    syslog(LOG_DEBUG, "Closed connection from");// %s", client_add);
+    syslog(LOG_DEBUG, "Closed connection from");
 }
