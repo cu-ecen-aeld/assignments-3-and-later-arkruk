@@ -3,7 +3,9 @@
 Kernel failed due to write operation on empty pointer.
 
 _echo "hello_world" > /dev/faulty_ 
+
 __Unable to handle kernel NULL pointer dereference at virtual address__ 
+
 0000000000000000
 Mem abort info:
   ESR = 0x96000045
