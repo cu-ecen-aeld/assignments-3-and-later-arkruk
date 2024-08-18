@@ -21,7 +21,11 @@ void receive_send_method(void* socket_arg);
 #define BUFSIZE 100
 #define SIG SIGRTMIN
 
+#ifdef USE_AESD_CHAR_DEVICE
+char* file_name = "/dev/aesdchar";
+#else
 char* file_name = "/var/tmp/aesdsocketdata";
+#endif
 char* daemon_arg = "-d";
 int accept_socket, server_socket;
 int run_as_daemon = 0;
@@ -72,8 +76,9 @@ static void timer_thread(union sigval sigval)
     tmp = localtime(&t);
 
     pthread_mutex_lock(&data_mutex);
-
+#ifndef USE_AESD_CHAR_DEVICE
     strftime(outstr, sizeof(outstr), "timestamp:%Y%m%d%H%M%S\n", tmp);
+#endif
     FILE * fd;
     fd = fopen(file_name, "a");
     if(fd < 0)
@@ -119,7 +124,9 @@ void signal_handler(int signal)
 
 int main(int argc, char *argv[])
 {
+#ifndef USE_AESD_CHAR_DEVICE
     remove(file_name);
+#endif
     struct sigevent sev;
 
     struct itimerspec its;
