@@ -62,12 +62,12 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
     size_t size = 0;
     PDEBUG("3");
     struct aesd_buffer_entry* add_entry = aesd_circular_buffer_find_entry_offset_for_fpos(&buffer, 0, &size);
-PDEBUG("4");
+    PDEBUG("4 size %d", add_entry->size);
     if (copy_to_user(buf, add_entry->buffptr, add_entry->size))
     {
         return -EFAULT;
     }
-PDEBUG("5");
+    PDEBUG("5");
     *f_pos += add_entry->size;
     return add_entry->size;
 }
