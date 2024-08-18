@@ -46,8 +46,7 @@ int aesd_release(struct inode *inode, struct file *filp)
     return 0;
 }
 
-ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
-                loff_t *f_pos)
+ssize_t aesd_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
     ssize_t retval = 0;
     PDEBUG("read %zu bytes with offset %lld", count, *f_pos);
@@ -62,7 +61,11 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
     }
     size_t size = 0;
     PDEBUG("3");
-    struct aesd_buffer_entry* add_entry = aesd_circular_buffer_find_entry_offset_for_fpos(&buffer, 0, &size);
+    struct aesd_buffer_entry* add_entry = aesd_circular_buffer_find_entry_offset_for_fpos(&buffer, *f_pos, &size);
+    if (add_entry == NULL)
+    {
+        return 0;
+    }
     PDEBUG("4 size %d", add_entry->size);
     if (copy_to_user(buf, add_entry->buffptr, add_entry->size))
     {
@@ -71,14 +74,8 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 
     PDEBUG("5a");
     *f_pos += add_entry->size;
-    if (dev->test == true)
-    { 
-        PDEBUG("6");
-        dev->test = false;
-        return add_entry->size;
-    }
-        PDEBUG("7");
-    return 0;
+    PDEBUG("6");
+    return add_entry->size;
 }
 
 ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
@@ -111,7 +108,6 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     aesd_circular_buffer_add_entry(&buffer, &add_entry);
     PDEBUG("write5");
     kfree(add_entry.buffptr);
-    dev->test = true;
     PDEBUG("write6a");
     return count;
 }
