@@ -33,7 +33,9 @@ struct aesd_circular_buffer buffer;
 int aesd_open(struct inode *inode, struct file *filp)
 {
     PDEBUG("open");
-
+    struct aesd_dev *dev;
+    dev = container_of(inode->i_cdev, struct aesd_dev, cdev);
+	filp->private_data = dev;
     return 0;
 }
 
@@ -48,11 +50,22 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
                 loff_t *f_pos)
 {
     ssize_t retval = 0;
-    PDEBUG("read %zu bytes with offset %lld",count,*f_pos);
-    /**
-     * TODO: handle read
-     */
-    return retval;
+    PDEBUG("read %zu bytes with offset %lld", count, *f_pos);
+
+    struct aesd_dev *dev = (struct aesd_dev *) filp->private_data;
+    if (count <= 0)
+    {
+        return 0;
+    }
+    size_t size = 0;
+    struct aesd_buffer_entry* add_entry = aesd_circular_buffer_find_entry_offset_for_fpos(&buffer, 0, &size);
+
+    if (copy_to_user(buf, add_entry->buffptr, add_entry->size))
+    {
+        return -EFAULT;
+    }
+
+    return add_entry->size;
 }
 
 ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
@@ -60,11 +73,30 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 {
     ssize_t retval = -ENOMEM;
     PDEBUG("write %zu bytes with offset %lld",count,*f_pos);
-    /**
-     * TODO: handle write
-     */
-    return retval;
+
+    struct aesd_dev *dev = (struct aesd_dev *) filp->private_data;
+
+    if (count <= 0)
+    {
+        return 0;
+    }
+
+    struct aesd_buffer_entry add_entry;
+    add_entry.size = count;
+    add_entry.buffptr = kmalloc(count * sizeof(char), GFP_KERNEL);
+
+    if (copy_from_user(add_entry.buffptr, buf, count))
+    {
+        return -EFAULT;
+    }
+    
+    aesd_circular_buffer_add_entry(&buffer, &add_entry);
+
+    kfree(add_entry.buffptr);
+
+    return count;
 }
+
 struct file_operations aesd_fops = {
     .owner =    THIS_MODULE,
     .read =     aesd_read,
