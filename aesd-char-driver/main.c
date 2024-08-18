@@ -53,6 +53,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
     PDEBUG("read %zu bytes with offset %lld", count, *f_pos);
 
     struct aesd_dev *dev = (struct aesd_dev *) filp->private_data;
+
     PDEBUG("1");
     if (count <= 0)
     {
@@ -73,7 +74,12 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
     }
     PDEBUG("5");
     *f_pos += add_entry->size;
-    return 0;// add_entry->size;
+    if (dev->test == true)
+    {
+        dev->test = false;
+        return add_entry->size;
+    }
+    return 0;
 }
 
 ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
@@ -106,6 +112,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     aesd_circular_buffer_add_entry(&buffer, &add_entry);
     PDEBUG("write5");
     kfree(add_entry.buffptr);
+    dev->test = true;
     PDEBUG("write6");
     return count;
 }
