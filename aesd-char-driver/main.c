@@ -67,9 +67,13 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
     {
         return -EFAULT;
     }
+        if (copy_to_user(buf, add_entry->buffptr, add_entry->size))
+    {
+        return -EFAULT;
+    }
     PDEBUG("5");
     *f_pos += add_entry->size;
-    return add_entry->size;
+    return 0;// add_entry->size;
 }
 
 ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
