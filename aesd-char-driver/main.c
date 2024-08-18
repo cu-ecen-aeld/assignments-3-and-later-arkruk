@@ -117,7 +117,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     PDEBUG("write4");
 
     add_entry.size = count + dev->size;
-    if (add_entry.buffptr[add_entry.size - 1] != '/n')
+    if (add_entry.buffptr[add_entry.size - 1] != '\n')
     {
         PDEBUG("writeEx %s ", add_entry.buffptr);
         dev->size = add_entry.size;
