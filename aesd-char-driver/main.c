@@ -93,17 +93,41 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     PDEBUG("write2");
     struct aesd_buffer_entry add_entry;
     add_entry.size = count;
-    add_entry.buffptr = kmalloc(count * sizeof(char), GFP_KERNEL);
+    add_entry.buffptr = kmalloc((count + dev->size) * sizeof(char), GFP_KERNEL);
+
+    if (dev->size > 0)
+    {
+        add_entry.buffptr = memcpy(add_entry.buffptr, dev->buffer, dev->size);
+        kfree(dev->buffer);
+    }
 
     PDEBUG("write3");
 
-    if (copy_from_user(add_entry.buffptr, buf, count))
+    if (copy_from_user(add_entry.buffptr+dev->size, buf, count))
     {
         PDEBUG("write3e");
+        if (dev->size > 0)
+        {
+            kfree(dev->buffer);
+        }
+        dev->size = 0;
         return -EFAULT;
     }
-    
+
     PDEBUG("write4");
+
+    add_entry.size = count + dev->size;
+    if (add_entry.buffptr[add_entry.size - 1] != '/n')
+    {
+        PDEBUG("writeEx");
+        dev->size = add_entry.size;
+        dev->buffer = add_entry.buffptr;
+        return count;
+    }
+    
+    dev->size = 0;
+
+    PDEBUG("write4b");    
 
     aesd_circular_buffer_add_entry(&buffer, &add_entry);
     PDEBUG("write5");
