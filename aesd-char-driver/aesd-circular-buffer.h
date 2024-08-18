@@ -23,7 +23,12 @@ struct aesd_buffer_entry
     /**
      * A location where the buffer contents in buffptr are stored
      */
+#ifdef __KERNEL__
     char *buffptr;
+#else
+    const char *buffptr;
+#endif
+    
     /**
      * Number of bytes stored in buffptr
      */

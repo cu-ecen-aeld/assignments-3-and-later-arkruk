@@ -9,6 +9,7 @@
  */
 
 #ifdef __KERNEL__
+#include <linux/slab.h>
 #include <linux/string.h>
 #else
 #include <string.h>
@@ -61,9 +62,16 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct
 */
 void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const struct aesd_buffer_entry *add_entry)
 {
-    buffer->entry[buffer->in_offs].buffptr = add_entry->buffptr;
     buffer->entry[buffer->in_offs].size = add_entry->size;
-    
+
+#ifdef __KERNEL__
+    kfree(buffer->entry[buffer->in_offs].buffptr);
+    buffer->entry[buffer->in_offs].buffptr = kmalloc(add_entry->size * sizeof(char), GFP_KERNEL);
+    buffer->entry[buffer->in_offs].buffptr = strncpy(buffer->entry[buffer->in_offs].buffptr, add_entry->buffptr, add_entry->size);
+#else
+    buffer->entry[buffer->in_offs].buffptr = add_entry->buffptr;
+#endif
+
     buffer->in_offs++;
     if (buffer->in_offs == AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
     {

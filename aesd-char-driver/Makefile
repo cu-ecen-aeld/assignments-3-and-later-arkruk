@@ -22,7 +22,6 @@ PWD       := $(shell pwd)
 
 modules:
 	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
-
 endif
 
 clean:
