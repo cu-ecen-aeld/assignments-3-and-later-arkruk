@@ -68,7 +68,7 @@ PDEBUG("4");
         return -EFAULT;
     }
 PDEBUG("5");
-    *f_pos = add_entry->size;
+    *f_pos += add_entry->size;
     return add_entry->size;
 }
 
