@@ -28,6 +28,7 @@ struct aesd_dev
     struct cdev cdev;
     char *buffer;
     size_t size;
+    struct mutex lock;
 };
 
 

@@ -57,15 +57,23 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count, loff_t *f_p
         return 0;
     }
     size_t size = 0;
+    
+    if (mutex_lock_interruptible(&dev->lock))
+    {
+		return -ERESTARTSYS;
+    }
     struct aesd_buffer_entry* add_entry = aesd_circular_buffer_find_entry_offset_for_fpos(&buffer, *f_pos, &size);
     if (add_entry == NULL)
     {
+        mutex_unlock(&dev->lock);
         return 0;
     }
     if (copy_to_user(buf, add_entry->buffptr, add_entry->size))
     {
+        mutex_unlock(&dev->lock);
         return -EFAULT;
     }
+    mutex_unlock(&dev->lock);
 
     *f_pos += add_entry->size;
     return add_entry->size;
@@ -82,6 +90,12 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     {
         return 0;
     }
+
+    if (mutex_lock_interruptible(&dev->lock))
+    {
+		return -ERESTARTSYS;
+    }
+
     struct aesd_buffer_entry add_entry;
     add_entry.size = count;
     add_entry.buffptr = kmalloc((count + dev->size) * sizeof(char), GFP_KERNEL);
@@ -99,6 +113,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
             kfree(dev->buffer);
         }
         dev->size = 0;
+        mutex_unlock(&dev->lock);
         return -EFAULT;
     }
 
@@ -107,6 +122,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     {
         dev->size = add_entry.size;
         dev->buffer = add_entry.buffptr;
+        mutex_unlock(&dev->lock);
         return count;
     }
     
@@ -114,6 +130,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 
     aesd_circular_buffer_add_entry(&buffer, &add_entry);
     kfree(add_entry.buffptr);
+    mutex_unlock(&dev->lock);
     return count;
 }
 
