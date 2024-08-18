@@ -78,25 +78,30 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     PDEBUG("write %zu bytes with offset %lld",count,*f_pos);
 
     struct aesd_dev *dev = (struct aesd_dev *) filp->private_data;
-
+    PDEBUG("write1");
     if (count <= 0)
     {
         return 0;
     }
-
+    PDEBUG("write2");
     struct aesd_buffer_entry add_entry;
     add_entry.size = count;
     add_entry.buffptr = kmalloc(count * sizeof(char), GFP_KERNEL);
 
+    PDEBUG("write3");
+
     if (copy_from_user(add_entry.buffptr, buf, count))
     {
+        PDEBUG("write3e");
         return -EFAULT;
     }
     
+    PDEBUG("write4");
+
     aesd_circular_buffer_add_entry(&buffer, &add_entry);
-
+    PDEBUG("write5");
     kfree(add_entry.buffptr);
-
+    PDEBUG("write6");
     return count;
 }
 
