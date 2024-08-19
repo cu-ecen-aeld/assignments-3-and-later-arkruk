@@ -129,7 +129,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     dev->size = 0;
 
     aesd_circular_buffer_add_entry(&buffer, &add_entry);
-    kfree(add_entry.buffptr);
+    //kfree(add_entry.buffptr);
     mutex_unlock(&dev->lock);
     return count;
 }
