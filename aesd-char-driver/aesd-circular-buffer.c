@@ -65,7 +65,7 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
     buffer->entry[buffer->in_offs].size = add_entry->size;
 
 #ifdef __KERNEL__
-    //kfree(buffer->entry[buffer->in_offs].buffptr);
+    kfree(buffer->entry[buffer->in_offs].buffptr);
     buffer->entry[buffer->in_offs].buffptr = kmalloc(add_entry->size * sizeof(char), GFP_KERNEL);
     buffer->entry[buffer->in_offs].buffptr = strncpy(buffer->entry[buffer->in_offs].buffptr, add_entry->buffptr, add_entry->size);
 #else

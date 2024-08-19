@@ -103,14 +103,14 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     if (dev->size > 0)
     {
         add_entry.buffptr = memcpy(add_entry.buffptr, dev->buffer, dev->size);
-        //kfree(dev->buffer);
+        kfree(dev->buffer);
     }
 
     if (copy_from_user(add_entry.buffptr+dev->size, buf, count))
     {
         if (dev->size > 0)
         {
-            //kfree(dev->buffer);
+            kfree(dev->buffer);
         }
         dev->size = 0;
         mutex_unlock(&dev->lock);
@@ -129,7 +129,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     dev->size = 0;
 
     aesd_circular_buffer_add_entry(&buffer, &add_entry);
-    //kfree(add_entry.buffptr);
+    kfree(add_entry.buffptr);
     mutex_unlock(&dev->lock);
     return count;
 }
