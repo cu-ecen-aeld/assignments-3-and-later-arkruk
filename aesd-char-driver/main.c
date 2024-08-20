@@ -68,7 +68,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count, loff_t *f_p
         mutex_unlock(&dev->lock);
         return 0;
     }
-    if (copy_to_user(buf, add_entry->buffptr, add_entry->size))
+    if (copy_to_user(buf, add_entry->buffptr+size, add_entry->size-size))
     {
         mutex_unlock(&dev->lock);
         return -EFAULT;
@@ -141,7 +141,6 @@ loff_t aesd_llseek(struct file *filp, loff_t off, int whence)
     loff_t newpos;
     switch(whence) {
         case 0: /* SEEK_SET */
-            
             newpos = off;
             break;
         case 1: /* SEEK_CUR */
