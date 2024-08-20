@@ -134,12 +134,64 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     return count;
 }
 
+loff_t aesd_llseek(struct file *filp, loff_t off, int whence)
+{
+    PDEBUG("aesd_llseek %d off with to %d", off, whence);
+    struct aesd_dev *dev = (struct aesd_dev *) filp->private_data;
+    loff_t newpos;
+    switch(whence) {
+        case 0: /* SEEK_SET */
+            
+            newpos = off;
+            break;
+        case 1: /* SEEK_CUR */
+            newpos = filp->f_pos + off;
+            break;
+        case 2: /* SEEK_END */
+            newpos = dev->size + off;
+            break;
+        default:
+            return -EINVAL;
+    }
+    if (newpos < 0)
+    {
+        return -EINVAL;
+    }
+    filp->f_pos = newpos;
+    return newpos;
+}
+
+long aesd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+    PDEBUG("aesd_ioctl cmd %d with arg %d", cmd, arg);
+    /*switch(cmd)
+    {
+        case WR_VALUE:
+            if( copy_from_user(&value ,(int32_t*) arg, sizeof(value)) )
+            {
+                return 0;
+            }
+            break;
+        case RD_VALUE:
+            if( copy_to_user((int32_t*) arg, &value, sizeof(value)) )
+            {
+                return 0;
+            }
+            break;
+        default:
+            break;
+    }*/
+    return 0;
+}
+
 struct file_operations aesd_fops = {
     .owner =    THIS_MODULE,
     .read =     aesd_read,
     .write =    aesd_write,
     .open =     aesd_open,
     .release =  aesd_release,
+    .llseek = aesd_llseek,
+    .unlocked_ioctl = aesd_ioctl,
 };
 
 static int aesd_setup_cdev(struct aesd_dev *dev)
