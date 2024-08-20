@@ -75,7 +75,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count, loff_t *f_p
     }
     mutex_unlock(&dev->lock);
 
-    *f_pos += add_entry->size;
+    *f_pos = *f_pos + add_entry->size - size;
     return add_entry->size;
 }
 
