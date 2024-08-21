@@ -20,6 +20,7 @@
 #include "aesdchar.h"
 #include "aesd-circular-buffer.h"
 #include <linux/slab.h>
+#include "aesd_ioctl.h"
 
 int aesd_major =   0; // use dynamic major
 int aesd_minor =   0;
@@ -163,24 +164,29 @@ loff_t aesd_llseek(struct file *filp, loff_t off, int whence)
 long aesd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
     PDEBUG("aesd_ioctl cmd %d with arg %d", cmd, arg);
-    /*switch(cmd)
-    {
-        case WR_VALUE:
-            if( copy_from_user(&value ,(int32_t*) arg, sizeof(value)) )
-            {
-                return 0;
-            }
-            break;
-        case RD_VALUE:
-            if( copy_to_user((int32_t*) arg, &value, sizeof(value)) )
-            {
-                return 0;
-            }
-            break;
-        default:
-            break;
-    }*/
-    return 0;
+    int err = 0;
+	int retval = 0;
+
+	if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC) return -ENOTTY;
+	if (_IOC_NR(cmd) > AESD_IOC_MAGIC) return -ENOTTY;
+
+	/*if (_IOC_DIR(cmd) & _IOC_READ)
+		err = !access_ok_wrapper(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
+	else if (_IOC_DIR(cmd) & _IOC_WRITE)
+		err =  !access_ok_wrapper(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
+	if (err) return -EFAULT;*/
+
+	switch(cmd) {
+
+	  case AESDCHAR_IOCSEEKTO:
+        PDEBUG("AESDCHAR_IOCSEEKTO");
+		break;
+
+	  default:
+         PDEBUG("ENOTTY");
+		return -ENOTTY;
+	}
+	return retval;
 }
 
 struct file_operations aesd_fops = {
