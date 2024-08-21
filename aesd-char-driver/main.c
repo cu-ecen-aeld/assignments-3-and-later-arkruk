@@ -77,7 +77,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count, loff_t *f_p
     mutex_unlock(&dev->lock);
 
     *f_pos = *f_pos + add_entry->size - size;
-    return add_entry->size;
+    return add_entry->size - size;
 }
 
 ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
@@ -161,30 +161,43 @@ loff_t aesd_llseek(struct file *filp, loff_t off, int whence)
     return newpos;
 }
 
-long aesd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
     PDEBUG("aesd_ioctl cmd %d with arg %d", cmd, arg);
+    int word, character;
     int err = 0;
 	int retval = 0;
 
 	if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC) return -ENOTTY;
 	if (_IOC_NR(cmd) > AESD_IOC_MAGIC) return -ENOTTY;
 
-	/*if (_IOC_DIR(cmd) & _IOC_READ)
-		err = !access_ok_wrapper(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
-	else if (_IOC_DIR(cmd) & _IOC_WRITE)
-		err =  !access_ok_wrapper(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
-	if (err) return -EFAULT;*/
+    struct aesd_dev *dev = (struct aesd_dev *) filp->private_data;
+
+    word = arg / 10;
+    character = arg % 10;
 
 	switch(cmd) {
 
-	  case AESDCHAR_IOCSEEKTO:
-        PDEBUG("AESDCHAR_IOCSEEKTO");
-		break;
-
-	  default:
-         PDEBUG("ENOTTY");
-		return -ENOTTY;
+	    case AESDCHAR_IOCSEEKTO:
+            PDEBUG("AESDCHAR_IOCSEEKTO");
+            if (word >= AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
+            {
+                return -EINVAL;
+            }
+            struct aesd_buffer_entry* entry = &buffer.entry[word];
+            if (character >= entry->size)
+            {
+                return -EINVAL;
+            }
+            char *new_word = kmalloc((entry->size - character) * sizeof(char), GFP_KERNEL);
+            entry->size = entry->size - character;
+            new_word = memcpy(new_word, entry->buffptr + character, dev->size);
+            kfree(entry->buffptr);
+            entry->buffptr = new_word;
+		    break;
+	    default:
+            PDEBUG("ENOTTY");
+		    return -ENOTTY;
 	}
 	return retval;
 }
