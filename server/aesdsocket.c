@@ -358,7 +358,7 @@ printf("aaaaaaaaaaaa\n");
  long number = 2;
 
         printf("Writing Value to Driver\n");
-        syslog(LOG_DEBUG, "AESDCHAR_IOCSEEKTO &d", AESDCHAR_IOCSEEKTO);
+        syslog(LOG_DEBUG, "AESDCHAR_IOCSEEKTO %d\n", AESDCHAR_IOCSEEKTO);
         ioctl(fd, AESDCHAR_IOCSEEKTO, &number); 
  
         printf("Closing Driver\n");
