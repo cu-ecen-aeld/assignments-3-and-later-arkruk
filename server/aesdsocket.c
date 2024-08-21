@@ -328,6 +328,7 @@ void receive_send_method(void* element)
     pthread_mutex_lock(&data_mutex);
     FILE * fd;
     fd = fopen(file_name, "a");
+    printf("OPEN %s\n", file_name);
     if(fd < 0)
     {
         if (run_as_daemon == 0)
@@ -352,6 +353,7 @@ printf("aaaaaaaaaaaa\n");
             if (result == 0)
             {
                 printf("IOTSTREE\n");
+                printf("file %s\n", file_name);
  
  int32_t number = 2;
 
