@@ -14,6 +14,8 @@
 #include <pthread.h>
 #include <time.h>
 #include <signal.h>
+#include <sys/ioctl.h>
+#include "../aesd-char-driver/aesd_ioctl.h"
 
 void receive_send_method(void* socket_arg);
 
@@ -350,6 +352,25 @@ printf("aaaaaaaaaaaa\n");
             if (result == 0)
             {
                 printf("IOTSTREE\n");
+        fd = open("/dev/aesdchar", O_RDWR);
+        if(fd < 0) {
+                printf("Cannot open aesdchar\n");
+                return 0;
+        }
+ 
+ int32_t number = 22;
+
+
+        printf("Enter the Value to send\n");
+        scanf("%d",&number);
+        printf("Writing Value to Driver\n");
+        ioctl(fd, AESDCHAR_IOCSEEKTO, (int32_t*) &number); 
+ 
+        printf("Closing Driver\n");
+        close(fd);
+
+
+                
                 break;
             }
             else
