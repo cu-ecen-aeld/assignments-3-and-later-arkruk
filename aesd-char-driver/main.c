@@ -170,8 +170,8 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
     int off;
     loff_t newpos;
 
-	if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC) return -ENOTTY;
-	if (_IOC_NR(cmd) > AESD_IOC_MAGIC) return -ENOTTY;
+	//if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC) return -ENOTTY;
+	//if (_IOC_NR(cmd) > AESD_IOC_MAGIC) return -ENOTTY;
 
     struct aesd_dev *dev = (struct aesd_dev *) filp->private_data;
 

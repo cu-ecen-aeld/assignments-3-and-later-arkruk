@@ -355,11 +355,11 @@ printf("aaaaaaaaaaaa\n");
                 printf("IOTSTREE\n");
                 printf("file %s\n", file_name);
  
- int32_t number = 2;
+ long number = 2;
 
         printf("Writing Value to Driver\n");
-        syslog(LOG_DEBUG, "AESDCHAR_IOCSEEKTO");
-        ioctl(fd, AESDCHAR_IOCSEEKTO, (int32_t*) &number); 
+        syslog(LOG_DEBUG, "AESDCHAR_IOCSEEKTO &d", AESDCHAR_IOCSEEKTO);
+        ioctl(fd, AESDCHAR_IOCSEEKTO, &number); 
  
         printf("Closing Driver\n");
 
