@@ -350,6 +350,7 @@ printf("aaaaaaaaaaaa\n");
             if (result == 0)
             {
                 printf("IOTSTREE\n");
+                break;
             }
             else
             {
