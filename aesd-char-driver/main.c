@@ -191,7 +191,7 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             {
                 return -EINVAL;
             }
-            int i = 0;
+            /*int i = 0;
 
             for (i = 0; i < (word - 1); i++)
             {
@@ -202,12 +202,13 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             off += buffer.entry[(buffer.out_offs + word) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED].size;
 
             filp->f_pos += off;
-            retval = filp->f_pos;
-            /*char *new_word = kmalloc((entry->size - character) * sizeof(char), GFP_KERNEL);
+            retval = filp->f_pos;*/
+            struct aesd_buffer_entry* entry = &buffer.entry[(buffer.out_offs + word) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED];
+            char *new_word = kmalloc((entry->size - character) * sizeof(char), GFP_KERNEL);
             entry->size = entry->size - character;
             new_word = memcpy(new_word, entry->buffptr + character, dev->size);
             kfree(entry->buffptr);
-            entry->buffptr = new_word;*/
+            entry->buffptr = new_word;
 		    break;
 	    default:
             PDEBUG("ENOTTY");

@@ -352,13 +352,8 @@ printf("aaaaaaaaaaaa\n");
             if (result == 0)
             {
                 printf("IOTSTREE\n");
-        fd = open("/dev/aesdchar", O_RDWR);
-        if(fd < 0) {
-                printf("Cannot open aesdchar\n");
-                return 0;
-        }
  
- int32_t number = 22;
+ int32_t number = 2;
 
 
         printf("Enter the Value to send\n");
@@ -367,7 +362,6 @@ printf("aaaaaaaaaaaa\n");
         ioctl(fd, AESDCHAR_IOCSEEKTO, (int32_t*) &number); 
  
         printf("Closing Driver\n");
-        close(fd);
 
 
                 
