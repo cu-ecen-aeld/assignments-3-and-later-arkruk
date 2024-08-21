@@ -26,6 +26,10 @@ char* file_name = "/dev/aesdchar";
 #else
 char* file_name = "/var/tmp/aesdsocketdata";
 #endif
+
+char* io_string = "AESDCHAR_IOCSEEKTO:";
+
+
 char* daemon_arg = "-d";
 int accept_socket, server_socket;
 int run_as_daemon = 0;
@@ -64,7 +68,7 @@ void free_queue()
 
 char outstr[200];
 int timerset = 0;
-
+//"AESDCHAR_IOCSEEKTO:8,6" 
 static void timer_thread(union sigval sigval)
 {
 
@@ -339,27 +343,38 @@ void receive_send_method(void* element)
             bzero(received_message, BUFSIZE);
 
             result_size = read(socket, received_message, BUFSIZE);
-            result = fwrite(received_message, sizeof(char), result_size, fd);
+            
+            int result = memcmp(received_message, io_string, strlen(io_string) - 1);
 
-            if(result < 0)
+printf("aaaaaaaaaaaa\n");
+            if (result == 0)
             {
-                if (run_as_daemon == 0)
-                {
-                    printf("write failed\n");
-                }
-                close(fd);
-                closelog();
-                close(socket);
-                return;
+                printf("IOTSTREE\n");
             }
-
-            if (received_message[result_size - 1] == '\n')
+            else
             {
-                if (run_as_daemon == 0)
+                result = fwrite(received_message, sizeof(char), result_size, fd);
+    
+                if(result < 0)
                 {
-                    printf("data finished\n");
+                    if (run_as_daemon == 0)
+                    {
+                        printf("write failed\n");
+                    }
+                    close(fd);
+                    closelog();
+                    close(socket);
+                    return;
                 }
-                break;
+    
+                if (received_message[result_size - 1] == '\n')
+                {
+                    if (run_as_daemon == 0)
+                    {
+                        printf("data finished\n");
+                    }
+                    break;
+                }
             }
         }
         fclose(fd);

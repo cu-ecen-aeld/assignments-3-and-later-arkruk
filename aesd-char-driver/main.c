@@ -167,6 +167,8 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
     int word, character;
     int err = 0;
 	int retval = 0;
+    int off;
+    loff_t newpos;
 
 	if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC) return -ENOTTY;
 	if (_IOC_NR(cmd) > AESD_IOC_MAGIC) return -ENOTTY;
@@ -184,16 +186,28 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             {
                 return -EINVAL;
             }
-            struct aesd_buffer_entry* entry = &buffer.entry[word];
-            if (character >= entry->size)
+
+            if (character >= buffer.entry[(buffer.out_offs + word) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED].size)
             {
                 return -EINVAL;
             }
-            char *new_word = kmalloc((entry->size - character) * sizeof(char), GFP_KERNEL);
+            int i = 0;
+
+            for (i = 0; i < (word - 1); i++)
+            {
+                
+                off += buffer.entry[(buffer.out_offs + i) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED].size;
+            }
+
+            off += buffer.entry[(buffer.out_offs + word) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED].size;
+
+            filp->f_pos += off;
+            retval = filp->f_pos;
+            /*char *new_word = kmalloc((entry->size - character) * sizeof(char), GFP_KERNEL);
             entry->size = entry->size - character;
             new_word = memcpy(new_word, entry->buffptr + character, dev->size);
             kfree(entry->buffptr);
-            entry->buffptr = new_word;
+            entry->buffptr = new_word;*/
 		    break;
 	    default:
             PDEBUG("ENOTTY");
