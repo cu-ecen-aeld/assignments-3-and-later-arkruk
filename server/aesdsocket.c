@@ -357,9 +357,6 @@ printf("aaaaaaaaaaaa\n");
  
  int32_t number = 2;
 
-
-        printf("Enter the Value to send\n");
-        scanf("%d",&number);
         printf("Writing Value to Driver\n");
         ioctl(fd, AESDCHAR_IOCSEEKTO, (int32_t*) &number); 
  
