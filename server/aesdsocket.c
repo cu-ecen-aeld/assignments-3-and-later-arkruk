@@ -328,7 +328,7 @@ void receive_send_method(void* element)
     pthread_mutex_lock(&data_mutex);
     FILE * fd;
     fd = fopen(file_name, "a");
-    printf("OPEN %s\n", file_name);
+    syslog(LOG_DEBUG, "OPEN %s\n", file_name);
     if(fd < 0)
     {
         if (run_as_daemon == 0)
@@ -377,6 +377,7 @@ printf("aaaaaaaaaaaa\n");
                     {
                         printf("write failed\n");
                     }
+                    syslog(LOG_DEBUG, "CLOSE %s\n", file_name);
                     close(fd);
                     closelog();
                     close(socket);
@@ -393,6 +394,7 @@ printf("aaaaaaaaaaaa\n");
                 }
             }
         }
+        syslog(LOG_DEBUG, "CLOSE %s\n", file_name);
         fclose(fd);
     }
 
