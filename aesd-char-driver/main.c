@@ -175,8 +175,8 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
     struct aesd_dev *dev = (struct aesd_dev *) filp->private_data;
 
-    word = arg / 10;
-    character = arg % 10;
+    word = 0;//arg / 10;
+    character = 2;//arg % 10;
 
 	switch(cmd) {
 
