@@ -352,6 +352,10 @@ void receive_send_method(void* element)
 printf("aaaaaaaaaaaa\n");
             if (result == 0)
             {
+                fclose(fd);
+
+                int fo;
+                fo = open(file_name, O_RDWR);
                 printf("IOTSTREE\n");
                 printf("file %s\n", file_name);
  
@@ -359,12 +363,11 @@ printf("aaaaaaaaaaaa\n");
 
         printf("Writing Value to Driver\n");
         syslog(LOG_DEBUG, "AESDCHAR_IOCSEEKTO %d\n", AESDCHAR_IOCSEEKTO);
-        ioctl(fd, AESDCHAR_IOCSEEKTO, &number); 
+        ioctl(fo, AESDCHAR_IOCSEEKTO, &number); 
  
         printf("Closing Driver\n");
-
-
-                
+        
+                close(fo);
                 break;
             }
             else
