@@ -359,7 +359,7 @@ printf("aaaaaaaaaaaa\n");
                 printf("IOTSTREE\n");
                 printf("file %s\n", file_name);
  
- long number = 2;
+ long number = 4;
 
         printf("Writing Value to Driver\n");
         syslog(LOG_DEBUG, "AESDCHAR_IOCSEEKTO %d\n", AESDCHAR_IOCSEEKTO);
@@ -393,12 +393,12 @@ printf("aaaaaaaaaaaa\n");
                     {
                         printf("data finished\n");
                     }
+                    fclose(fd);
                     break;
                 }
             }
         }
         syslog(LOG_DEBUG, "CLOSE %s\n", file_name);
-        fclose(fd);
     }
 
     // send
