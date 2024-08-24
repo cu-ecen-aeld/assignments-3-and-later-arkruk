@@ -362,7 +362,6 @@ void receive_send_method(void* element)
 
                 for (i = strlen(io_string);; i++)
                 {
-                    printf("A %d\n", received_message[i] - '0');
                     if (received_message[i] == ',')
                     {
                         i++;
@@ -380,7 +379,6 @@ void receive_send_method(void* element)
 
                 for (;;i++)
                 {
-                    printf("B %d\n", received_message[i] - '0');
                     if (received_message[i] == '\n')
                     {
                         break;
@@ -413,10 +411,6 @@ void receive_send_method(void* element)
     
                 if (received_message[result_size - 1] == '\n')
                 {
-                    if (run_as_daemon == 0)
-                    {
-                        printf("data finished\n");
-                    }
                     close(fd);
                     break;
                 }
