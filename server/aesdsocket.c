@@ -358,7 +358,7 @@ printf("aaaaaaaaaaaa\n");
 
                 int fo;
                 fo = open(file_name, O_RDWR);
-                printf("IOTSTREE\n");
+                printf("IOTSTREE: %s\n", received_message);
                 printf("file %s\n", file_name);
  
 
@@ -387,7 +387,7 @@ printf("aaaaaaaaaaaa\n");
                     {
                         break;
                     }
-                    data.write_cmd_offset = 10 * data.write_cmd_offset + received_message[i] - '0';
+                    data.write_cmd_offset = 10 * data.write_cmd + received_message[i] - '0';
                 }
 
         printf("Writing Value to Driver\n");
