@@ -328,8 +328,9 @@ void receive_send_method(void* element)
 
     // read
     pthread_mutex_lock(&data_mutex);
-    FILE * fd;
-    fd = fopen(file_name, "a");
+    int * fd;
+    
+    fd = open(file_name, O_RDWR);
     syslog(LOG_DEBUG, "OPEN %s\n", file_name);
     if(fd < 0)
     {
@@ -406,7 +407,7 @@ void receive_send_method(void* element)
             }
             else
             {
-                result = fwrite(received_message, sizeof(char), result_size, fd);
+                result = write(fd, received_message, result_size);
     
                 if(result < 0)
                 {
@@ -427,7 +428,7 @@ void receive_send_method(void* element)
                     {
                         printf("data finished\n");
                     }
-                    fclose(fd);
+                    close(fd);
                     break;
                 }
             }
