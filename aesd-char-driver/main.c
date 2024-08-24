@@ -184,9 +184,9 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
     kfree(data);
 
-	switch(data->write_cmd)
+	switch(cmd)
     {
-	    case WRITE_CMD:
+	    case AESDCHAR_IOCSEEKTO:
             PDEBUG("AESDCHAR_IOCSEEKTO");
             if (word >= AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
             {
