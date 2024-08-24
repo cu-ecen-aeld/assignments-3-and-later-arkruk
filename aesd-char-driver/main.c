@@ -167,8 +167,6 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
     int write_cmd, write_cmd_offset;
     int err = 0;
 	int retval = 0;
-    int off;
-    loff_t newpos;
 
 	if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC) return -ENOTTY;
 	if (_IOC_NR(cmd) > AESD_IOC_MAGIC) return -ENOTTY;
@@ -180,7 +178,7 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
     
     write_cmd = data->write_cmd;
     write_cmd_offset = data->write_cmd_offset;
-    printk("write_cmd=%lu write_cmd_offset=%lu\n", write_cmd, write_cmd_offset);
+    printk("write_cmd=%d write_cmd_offset=%d\n", write_cmd, write_cmd_offset);
 
     kfree(data);
 

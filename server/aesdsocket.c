@@ -351,7 +351,6 @@ void receive_send_method(void* element)
             
             int result = memcmp(received_message, io_string, strlen(io_string) - 1);
 
-printf("aaaaaaaaaaaa\n");
             if (result == 0)
             {
                 fclose(fd);
@@ -361,7 +360,6 @@ printf("aaaaaaaaaaaa\n");
                 printf("IOTSTREE: %s\n", received_message);
                 printf("file %s\n", file_name);
  
-
                 struct aesd_seekto data;
                 data.write_cmd = 0;
                 data.write_cmd_offset = 0;
@@ -374,11 +372,14 @@ printf("aaaaaaaaaaaa\n");
                         i++;
                         break;
                     }
-                    if (received_message[i] == '\n')
+                    if (received_message[i] >= '0' && received_message[i] <= '9')
+                    {
+                        data.write_cmd = 10 * data.write_cmd + received_message[i] - '0';
+                    }
+                    else if (received_message[i] == '\n')
                     {
                         break;
                     }
-                    data.write_cmd = 10 * data.write_cmd + received_message[i] - '0';
                 }
 
                 for (;;i++)
@@ -388,7 +389,10 @@ printf("aaaaaaaaaaaa\n");
                     {
                         break;
                     }
-                    data.write_cmd_offset = 10 * data.write_cmd_offset + received_message[i] - '0';
+                    if (received_message[i] >= '0' && received_message[i] <= '9')
+                    {
+                        data.write_cmd_offset = 10 * data.write_cmd_offset + received_message[i] - '0';
+                    }
                 }
 
         printf("Writing Value to Driver\n");
