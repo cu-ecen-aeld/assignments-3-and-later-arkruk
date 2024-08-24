@@ -170,8 +170,8 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
     int off;
     loff_t newpos;
 
-	//if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC) return -ENOTTY;
-	//if (_IOC_NR(cmd) > AESD_IOC_MAGIC) return -ENOTTY;
+	if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC) return -ENOTTY;
+	if (_IOC_NR(cmd) > AESD_IOC_MAGIC) return -ENOTTY;
 
     struct aesd_seekto *data = kmalloc(sizeof(struct aesd_seekto), GFP_DMA);
     if (copy_from_user(data, (void *)arg, sizeof(struct aesd_seekto))){
@@ -179,12 +179,14 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
     }
     printk("Debug %lu %lu\n", data->write_cmd, data->write_cmd_offset);
 
-    word = 0;//arg / 10;
-    character = 4;//arg % 10;
+    word = data->write_cmd_offset / 10;
+    character = data->write_cmd_offset % 10;
 
-	switch(cmd) {
+    kfree(data);
 
-	    case AESDCHAR_IOCSEEKTO:
+	switch(data->write_cmd)
+    {
+	    case WRITE_CMD:
             PDEBUG("AESDCHAR_IOCSEEKTO");
             if (word >= AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
             {

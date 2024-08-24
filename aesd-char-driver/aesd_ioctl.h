@@ -42,5 +42,6 @@ struct aesd_seekto {
  * The maximum number of commands supported, used for bounds checking
  */
 #define AESDCHAR_IOC_MAXNR 1
+#define WRITE_CMD 0
 
 #endif /* AESD_IOCTL_H */
