@@ -368,7 +368,7 @@ printf("aaaaaaaaaaaa\n");
 
                 for (i = strlen(io_string);; i++)
                 {
-                    printf("A %d", received_message[i]);
+                    printf("A %d\n", received_message[i] - '0');
                     if (received_message[i] == ':')
                     {
                         break;
@@ -377,15 +377,17 @@ printf("aaaaaaaaaaaa\n");
                     {
                         break;
                     }
+                    data.write_cmd = 10 * data.write_cmd + received_message[i] - '0';
                 }
 
                 for (;;i++)
                 {
-                    printf("B %d", received_message[i]);
+                    printf("B %d\n", received_message[i] - '0');
                     if (received_message[i] == '\n')
                     {
                         break;
                     }
+                    data.write_cmd_offset = 10 * data.write_cmd_offset + received_message[i] - '0';
                 }
 
         printf("Writing Value to Driver\n");
