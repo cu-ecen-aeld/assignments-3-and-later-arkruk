@@ -173,7 +173,11 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	//if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC) return -ENOTTY;
 	//if (_IOC_NR(cmd) > AESD_IOC_MAGIC) return -ENOTTY;
 
-    struct aesd_dev *dev = (struct aesd_dev *) filp->private_data;
+    struct aesd_seekto *data = kmalloc(sizeof(struct aesd_seekto), GFP_DMA);
+    if (copy_from_user(data, (void *)arg, sizeof(struct aesd_seekto))){
+        return -EFAULT;
+    }
+    printk("Debug %lu %lu\n", data->write_cmd, data->write_cmd_offset);
 
     word = 0;//arg / 10;
     character = 4;//arg % 10;
@@ -191,6 +195,8 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             {
                 return -EINVAL;
             }
+
+
             /*int i = 0;
 
             for (i = 0; i < (word - 1); i++)

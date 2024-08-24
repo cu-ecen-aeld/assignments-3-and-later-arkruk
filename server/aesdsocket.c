@@ -359,11 +359,14 @@ printf("aaaaaaaaaaaa\n");
                 printf("IOTSTREE\n");
                 printf("file %s\n", file_name);
  
- long number = 4;
+
+                struct aesd_seekto data;
+                data.write_cmd = 0;
+                data.write_cmd_offset = 42;
 
         printf("Writing Value to Driver\n");
         syslog(LOG_DEBUG, "AESDCHAR_IOCSEEKTO %d\n", AESDCHAR_IOCSEEKTO);
-        ioctl(fo, AESDCHAR_IOCSEEKTO, &number); 
+        ioctl(fo, AESDCHAR_IOCSEEKTO, &data); 
  
         printf("Closing Driver\n");
         
