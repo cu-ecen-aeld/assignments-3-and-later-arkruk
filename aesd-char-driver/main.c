@@ -164,7 +164,7 @@ loff_t aesd_llseek(struct file *filp, loff_t off, int whence)
 long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
     PDEBUG("aesd_ioctl cmd %d with arg %d", cmd, arg);
-    int word, character;
+    int write_cmd, write_cmd_offset;
     int err = 0;
 	int retval = 0;
     int off;
@@ -177,51 +177,37 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
     if (copy_from_user(data, (void *)arg, sizeof(struct aesd_seekto))){
         return -EFAULT;
     }
-    printk("Debug %lu %lu\n", data->write_cmd, data->write_cmd_offset);
-
-    word = data->write_cmd;
-    character = data->write_cmd_offset;
+    
+    write_cmd = data->write_cmd;
+    write_cmd_offset = data->write_cmd_offset;
+    printk("write_cmd=%lu write_cmd_offset=%lu\n", write_cmd, write_cmd_offset);
 
     kfree(data);
 
 	switch(cmd)
     {
 	    case AESDCHAR_IOCSEEKTO:
-            PDEBUG("AESDCHAR_IOCSEEKTO");
-            if (word >= AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
+            PDEBUG("execute AESDCHAR_IOCSEEKTO");
+            if (write_cmd >= AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
             {
                 return -EINVAL;
             }
 
-            if (character >= buffer.entry[(buffer.out_offs + word) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED].size)
+            if (write_cmd_offset >= buffer.entry[(buffer.out_offs + write_cmd) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED].size)
             {
                 return -EINVAL;
             }
 
-
-            /*int i = 0;
-
-            for (i = 0; i < (word - 1); i++)
-            {
-                
-                off += buffer.entry[(buffer.out_offs + i) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED].size;
-            }
-
-            off += buffer.entry[(buffer.out_offs + word) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED].size;
-
-            filp->f_pos += off;
-            retval = filp->f_pos;*/
-            buffer.out_offs = (buffer.out_offs + word) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+            buffer.out_offs = (buffer.out_offs + write_cmd) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
             struct aesd_buffer_entry* entry = &buffer.entry[buffer.out_offs];
             
-            char *new_word = kmalloc((entry->size - character) * sizeof(char), GFP_KERNEL);
-            entry->size = entry->size - character;
-            new_word = memcpy(new_word, entry->buffptr + character, entry->size);
+            char *new_word = kmalloc((entry->size - write_cmd_offset) * sizeof(char), GFP_KERNEL);
+            entry->size = entry->size - write_cmd_offset;
+            new_word = memcpy(new_word, entry->buffptr + write_cmd_offset, entry->size);
             kfree(entry->buffptr);
             entry->buffptr = new_word;
 		    break;
 	    default:
-            PDEBUG("ENOTTY");
 		    return -ENOTTY;
 	}
 	return retval;
