@@ -182,10 +182,12 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
     kfree(data);
 
+
 	switch(cmd)
     {
 	    case AESDCHAR_IOCSEEKTO:
             PDEBUG("execute AESDCHAR_IOCSEEKTO");
+
             if (write_cmd >= AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
             {
                 return -EINVAL;
@@ -195,7 +197,11 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             {
                 return -EINVAL;
             }
-
+            struct aesd_dev *dev = (struct aesd_dev *) filp->private_data;
+            if (mutex_lock_interruptible(&dev->lock))
+            {
+		        return -ERESTARTSYS;
+            }
             buffer.out_offs = (buffer.out_offs + write_cmd) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
             struct aesd_buffer_entry* entry = &buffer.entry[buffer.out_offs];
             
@@ -204,6 +210,7 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             new_word = memcpy(new_word, entry->buffptr + write_cmd_offset, entry->size);
             kfree(entry->buffptr);
             entry->buffptr = new_word;
+            mutex_unlock(&dev->lock);
 		    break;
 	    default:
 		    return -ENOTTY;
