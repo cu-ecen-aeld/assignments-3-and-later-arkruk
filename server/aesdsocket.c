@@ -369,7 +369,7 @@ printf("aaaaaaaaaaaa\n");
                 for (i = strlen(io_string);; i++)
                 {
                     printf("A %d\n", received_message[i] - '0');
-                    if (received_message[i] == ':')
+                    if (received_message[i] == ',')
                     {
                         break;
                     }
