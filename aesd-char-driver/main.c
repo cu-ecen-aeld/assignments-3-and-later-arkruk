@@ -211,7 +211,9 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
             filp->f_pos += off;
             retval = filp->f_pos;*/
-            struct aesd_buffer_entry* entry = &buffer.entry[(buffer.out_offs + word) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED];
+            buffer.out_offs = (buffer.out_offs + word) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+            struct aesd_buffer_entry* entry = &buffer.entry[buffer.out_offs];
+            
             char *new_word = kmalloc((entry->size - character) * sizeof(char), GFP_KERNEL);
             entry->size = entry->size - character;
             new_word = memcpy(new_word, entry->buffptr + character, entry->size);
