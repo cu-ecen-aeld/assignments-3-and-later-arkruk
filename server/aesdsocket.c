@@ -328,7 +328,7 @@ void receive_send_method(void* element)
 
     // read
     pthread_mutex_lock(&data_mutex);
-    int * fd;
+    int fd;
     
     fd = open(file_name, O_RDWR);
     syslog(LOG_DEBUG, "OPEN %s\n", file_name);
