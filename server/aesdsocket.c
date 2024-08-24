@@ -323,6 +323,8 @@ void receive_send_method(void* element)
     int result_size;
     int result;
     int socket = ((struct thread_element*)element)->socket;
+    int i = 0;
+    int j = 0;
 
     // read
     pthread_mutex_lock(&data_mutex);
@@ -362,7 +364,29 @@ printf("aaaaaaaaaaaa\n");
 
                 struct aesd_seekto data;
                 data.write_cmd = 0;
-                data.write_cmd_offset = 42;
+                data.write_cmd_offset = 0;
+
+                for (i = strlen(io_string);; i++)
+                {
+                    printf("A %d", received_message[i]);
+                    if (received_message[i] == ':')
+                    {
+                        break;
+                    }
+                    if (received_message[i] == '\n')
+                    {
+                        break;
+                    }
+                }
+
+                for (;;i++)
+                {
+                    printf("B %d", received_message[i]);
+                    if (received_message[i] == '\n')
+                    {
+                        break;
+                    }
+                }
 
         printf("Writing Value to Driver\n");
         syslog(LOG_DEBUG, "AESDCHAR_IOCSEEKTO %d\n", AESDCHAR_IOCSEEKTO);

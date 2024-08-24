@@ -179,8 +179,8 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
     }
     printk("Debug %lu %lu\n", data->write_cmd, data->write_cmd_offset);
 
-    word = data->write_cmd_offset / 10;
-    character = data->write_cmd_offset % 10;
+    word = data->write_cmd;
+    character = data->write_cmd_offset;
 
     kfree(data);
 
