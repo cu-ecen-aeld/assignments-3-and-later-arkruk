@@ -354,12 +354,7 @@ void receive_send_method(void* element)
 
             if (result == 0)
             {
-                close(fd);
-
-                int fo;
-                fo = open(file_name, O_RDWR);
-                printf("IOTSTREE: %s\n", received_message);
-                printf("file %s\n", file_name);
+                fd = open(file_name, O_RDWR);
  
                 struct aesd_seekto data;
                 data.write_cmd = 0;
@@ -396,13 +391,7 @@ void receive_send_method(void* element)
                     }
                 }
 
-        printf("Writing Value to Driver\n");
-        syslog(LOG_DEBUG, "AESDCHAR_IOCSEEKTO %d\n", AESDCHAR_IOCSEEKTO);
-        ioctl(fo, AESDCHAR_IOCSEEKTO, &data); 
- 
-        printf("Closing Driver\n");
-        
-                close(fo);
+                ioctl(fd, AESDCHAR_IOCSEEKTO, &data); 
                 break;
             }
             else
@@ -433,6 +422,7 @@ void receive_send_method(void* element)
                 }
             }
         }
+        close(fd);
         syslog(LOG_DEBUG, "CLOSE %s\n", file_name);
     }
 
