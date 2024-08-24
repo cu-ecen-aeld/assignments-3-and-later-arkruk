@@ -371,6 +371,7 @@ printf("aaaaaaaaaaaa\n");
                     printf("A %d\n", received_message[i] - '0');
                     if (received_message[i] == ',')
                     {
+                        i++;
                         break;
                     }
                     if (received_message[i] == '\n')
@@ -387,7 +388,7 @@ printf("aaaaaaaaaaaa\n");
                     {
                         break;
                     }
-                    data.write_cmd_offset = 10 * data.write_cmd + received_message[i] - '0';
+                    data.write_cmd_offset = 10 * data.write_cmd_offset + received_message[i] - '0';
                 }
 
         printf("Writing Value to Driver\n");
