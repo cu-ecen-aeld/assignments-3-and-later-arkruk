@@ -178,7 +178,7 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
     
     write_cmd = data->write_cmd;
     write_cmd_offset = data->write_cmd_offset;
-    printk("write_cmd=%d write_cmd_offset=%d\n", write_cmd, write_cmd_offset);
+    PDEBUG("write_cmd=%d write_cmd_offset=%d\n", write_cmd, write_cmd_offset);
 
     kfree(data);
 
