@@ -354,7 +354,7 @@ void receive_send_method(void* element)
 
             if (result == 0)
             {
-                fclose(fd);
+                close(fd);
 
                 int fo;
                 fo = open(file_name, O_RDWR);
